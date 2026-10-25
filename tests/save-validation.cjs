@@ -2,14 +2,11 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
-const html = fs.readFileSync(require('node:path').join(__dirname, '../index.html'), 'utf8');
-const saveScript = fs.readFileSync(require('node:path').join(__dirname, '../save.js'), 'utf8');
-new vm.Script(saveScript);
-const gameScript = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+const { main: gameScript, state, root, scripts } = require('./game-sources.cjs');
+const saveScript = fs.readFileSync(require('node:path').join(root, 'save.js'), 'utf8');
 const script = gameScript + '\n' + saveScript;
-new vm.Script(script); // Parse the complete game, not just the extracted functions.
+new vm.Script(scripts.map(s => s.source).join('\n'));
 const extract = (start, end) => script.slice(script.indexOf(start), script.indexOf(end, script.indexOf(start)));
-const state = script.slice(script.indexOf('const gameState = {'), script.indexOf('const creatureDatabase = {'));
 const validation = extract('function validateSaveData(', 'function loadGameData(');
 const loader = extract('function loadGameData(', '// Set when storage');
 const parser = saveScript.slice(saveScript.indexOf('function parseSaveCode('));
@@ -73,3 +70,4 @@ run('storage.set("creatureMatchGame", JSON.stringify(input)); loadGameData();');
 assert.equal(run('gameState.creatures[0].bondLevel'), 0);
 assert.equal(run('gameState.team[0]'), 1.25);
 console.log(`${count} validation cases plus migration, import, disk recovery, and full-script syntax checks passed.`);
+
