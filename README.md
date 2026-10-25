@@ -17,7 +17,13 @@ Open http://localhost:8000. Keep the asset folders beside `index.html` when depl
 - `index.html`: page structure and the remaining game script, including combat, progression, menus, and startup.
 - `styles.css`: the stylesheet formerly embedded in the page.
 - `save.js`: save validation, migrations, browser persistence, and portable save-code encoding/decoding.
+- `data/creatures.js`: creature species and evolution names.
+- `data/abilities.js`: attacks, passives, and ability charge/unlock settings.
+- `data/world.js`: story encounters, floor themes, tutorial content, and story text.
+- `data/balance.js`: combat multipliers, XP/evolution/merge/bond costs, shop skill definitions, reward tables, energy, summon odds, and mode settings.
 - `tests/`: regression checks that run with Node.js without additional packages.
+
+The data files load first in the order listed in `index.html`, followed by `save.js` and the main game script. They are synchronous classic scripts sharing the same global scope; `data/balance.js` initializes constants used by the other data files. Keep this order when adding scripts. Data files contain definitions only and do not access the DOM or mutate live game state.
 
 `save.js` is a classic script loaded before the main game script. Its functions resolve shared game state at call time; do not make either script asynchronous or call save functions before the game declarations initialize. Save import dialogs and the import application flow remain with the interface code in `index.html` for now.
 
@@ -34,4 +40,5 @@ Before releasing, also check starter selection, a battle, renaming, saving/reloa
 
 ## Android direction
 
-This is the first incremental extraction. Separating game data, battle rules, progression, and interface code can follow in small changes. The game still uses browser storage and shared globals; native packaging, lifecycle handling, and Android device testing are future work.
+Styles, save handling, and static game data have been extracted. Battle rules, progression logic, and interface code can follow in small changes. The game still uses browser storage and shared globals; native packaging, lifecycle handling, and Android device testing are future work.
+

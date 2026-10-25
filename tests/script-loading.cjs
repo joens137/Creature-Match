@@ -3,30 +3,47 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-const root = path.join(__dirname, '..');
-const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-const save = fs.readFileSync(path.join(root, 'save.js'), 'utf8');
-const scripts = [...html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/g)];
-assert.equal(scripts.length, 2);
-assert.match(scripts[0][1], /src="save.js"/);
-assert.doesNotMatch(scripts[0][1], /async|defer/);
+const { root, html, scripts, main, state } = require('./game-sources.cjs');
+assert.deepEqual(scripts.map(s => s.path), [
+    'data/balance.js', 'data/creatures.js', 'data/abilities.js', 'data/world.js', 'save.js', null
+]);
+for (const script of scripts) {
+    assert.doesNotMatch(script.attributes, /async|defer/);
+    new vm.Script(script.source, { filename: script.path || 'index.html' });
+}
 assert.match(html, /<link rel="stylesheet" href="styles.css">/);
 assert.ok(fs.statSync(path.join(root, 'styles.css')).size > 0);
-const main = scripts[1][2];
-new vm.Script(save + '\n' + main);
-// Run real state/database declarations with the extracted save script loaded first.
-// This catches loading-order and real species-ID compatibility regressions.
-const dbStart = main.indexOf('const creatureDatabase = {');
-const dbEnd = main.indexOf('\n        };', dbStart) + '\n        };'.length;
-const state = main.slice(main.indexOf('const gameState = {'), dbStart);
+new vm.Script(scripts.map(s => s.source).join('\n'));
+// Evaluate separate files in browser order. Data files must not need the DOM or live state.
 const context = vm.createContext({ console });
-vm.runInContext(save, context);
-vm.runInContext(state + main.slice(dbStart, dbEnd) + `
-const ELEMENTS = ['fire','water','grass','electric','dark'];
+for (const script of scripts.filter(s => s.path !== null)) {
+    vm.runInContext(script.source, context, { filename: script.path });
+}
+vm.runInContext(state + `
 const result = validateSaveData({
   creatures: [{ id: 123.5, baseId: 1, level: 1, mergeLevel: 0, xp: 0 }],
   team: [123.5, null, null], selectedStarterElement: 'fire'
 });
 if (!result.ok) throw new Error(result.reason);
 `, context);
-console.log('Script order, stylesheet reference, combined syntax, and actual-database save compatibility passed.');
+// Every species must retain evolution and ability coverage after extraction.
+const data = vm.runInContext('({ creatureDatabase, EVO_NAMES, ABILITIES, PASSIVE_TABLE, SUMMON_POOL, levelData, LEVEL_XP_TABLE, CREATURE_MAX_LEVEL, ELEMENTS, elementAdvantages })', context);
+for (const [id, species] of Object.entries(data.creatureDatabase)) {
+    assert.ok(data.ELEMENTS.includes(species.element), `Unknown element for ${id}`);
+    assert.equal(data.EVO_NAMES[id].length, 2, `Missing evolution names for ${id}`);
+    assert.ok(data.ABILITIES[id]?.a1 && data.ABILITIES[id]?.a2, `Missing abilities for ${id}`);
+}
+for (const pool of Object.values(data.SUMMON_POOL)) {
+    for (const id of pool) assert.ok(data.creatureDatabase[id], `Unknown summon species ${id}`);
+}
+for (const levels of Object.values(data.levelData)) {
+    for (const level of levels) {
+        for (const enemy of level.enemies) assert.ok(data.creatureDatabase[enemy.id], `Unknown story species ${enemy.id}`);
+    }
+}
+assert.equal(data.LEVEL_XP_TABLE.length, data.CREATURE_MAX_LEVEL);
+for (const element of data.ELEMENTS) {
+    assert.equal(data.elementAdvantages[element].length, 2);
+    for (const target of data.elementAdvantages[element]) assert.ok(data.ELEMENTS.includes(target));
+}
+console.log('Script order, stylesheet, combined syntax, isolated data loading, species/ability/encounter coverage, XP table, and real-save compatibility passed.');

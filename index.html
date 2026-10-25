@@ -22,6 +22,10 @@
         <canvas id="gameCanvas"></canvas>
     </div>
 
+    <script src="data/balance.js"></script>
+    <script src="data/creatures.js"></script>
+    <script src="data/abilities.js"></script>
+    <script src="data/world.js"></script>
     <script src="save.js"></script>
     <script>
         const canvas = document.getElementById('gameCanvas');
@@ -127,228 +131,9 @@
         // runs in on the Claude site).
         const GAME_STATE_DEFAULTS = JSON.parse(JSON.stringify(gameState));
 
-        // ===== CREATURE DATABASE =====
-        const creatureDatabase = {
-            // Fire creatures
-            1: { id: 1, code: 'FC1', name: 'Cinder', element: 'fire', emoji: '🔥', rarity: 'common', baseHP: 50, baseATK: 12, baseDEF: 6,
-                 ability: { name: 'Flame Burst', effect: 'Deal +50% damage this turn' } },
-            2: { id: 2, code: 'FR1', name: 'Wildfire', element: 'fire', emoji: '🌪️', rarity: 'rare', baseHP: 64, baseATK: 12.5, baseDEF: 7.7,
-                 ability: { name: 'Inferno', effect: 'Deal 50 fixed damage' } },
-            3: { id: 3, code: 'FE1', name: 'Infernal', element: 'fire', emoji: '💥', rarity: 'epic', baseHP: 85.1, baseATK: 13.1, baseDEF: 9.5,
-                 ability: { name: 'Cataclysm', effect: 'Deal 100 fixed damage' } },
 
-            // Water creatures
-            4: { id: 4, code: 'WC1', name: 'Droplet', element: 'water', emoji: '💧', rarity: 'common', baseHP: 48, baseATK: 12, baseDEF: 7,
-                 ability: { name: 'Flood', effect: 'Deal +40% water damage for 3 turns' } },
-            5: { id: 5, code: 'WR1', name: 'Tidecaller', element: 'water', emoji: '🌊', rarity: 'rare', baseHP: 60.7, baseATK: 13.4, baseDEF: 8.8,
-                 ability: { name: 'Tidal Wave', effect: 'Clear bottom row of board' } },
-            6: { id: 6, code: 'WE1', name: 'Leviathan', element: 'water', emoji: '🐉', rarity: 'epic', baseHP: 80.4, baseATK: 13.1, baseDEF: 10.6,
-                 ability: { name: 'Abyss', effect: 'Deal 80 fixed damage' } },
 
-            // Grass creatures
-            7: { id: 7, code: 'GC1', name: 'Sprout', element: 'grass', emoji: '🌿', rarity: 'common', baseHP: 48, baseATK: 12, baseDEF: 6,
-                 ability: { name: 'Entangle', effect: 'Enemy attacks every 2 turns instead' } },
-            8: { id: 8, code: 'GR1', name: 'Thornvine', element: 'grass', emoji: '🌱', rarity: 'rare', baseHP: 64, baseATK: 12.5, baseDEF: 7.7,
-                 ability: { name: 'Growth', effect: 'Gain +10% stats per turn' } },
-            9: { id: 9, code: 'GE1', name: 'Wildwood', element: 'grass', emoji: '🦁', rarity: 'epic', baseHP: 82.7, baseATK: 13.1, baseDEF: 9.5,
-                 ability: { name: "Nature's Wrath", effect: 'Deal 90 fixed damage' } },
 
-            // Electric creatures (unlock Floor 2)
-            10: { id: 10, code: 'EC1', name: 'Zap', element: 'electric', emoji: '⚡', rarity: 'common', baseHP: 46, baseATK: 13, baseDEF: 6,
-                  ability: { name: 'Shock', effect: 'Deal +45% damage to water types' } },
-            11: { id: 11, code: 'ER1', name: 'Stormchild', element: 'electric', emoji: '🌩️', rarity: 'rare', baseHP: 61.8, baseATK: 12.5, baseDEF: 7.7,
-                  ability: { name: 'Thunder', effect: 'Stun enemy for 1 turn' } },
-            12: { id: 12, code: 'EE1', name: 'Sparkhorn', element: 'electric', emoji: '⚙️', rarity: 'epic', baseHP: 78, baseATK: 13.9, baseDEF: 9.5,
-                  ability: { name: 'Overdrive', effect: 'Deal 110 fixed damage' } },
-
-            // Dark creatures (unlock Floor 3)
-            13: { id: 13, code: 'DC1', name: 'Shade',    element: 'dark',     emoji: '👻', rarity: 'common',    baseHP: 48, baseATK: 12, baseDEF: 6,
-                  ability: { name: 'Night Veil', effect: 'Reduce enemy damage by 30%' } },
-            14: { id: 14, code: 'DR1', name: 'Nightbane',   element: 'dark',     emoji: '🌑', rarity: 'rare',      baseHP: 59.6, baseATK: 12.5, baseDEF: 7.7,
-                  ability: { name: 'Curse', effect: 'Reduce enemy attack by 25%' } },
-            15: { id: 15, code: 'DE1', name: 'Void',  element: 'dark',     emoji: '🕷️', rarity: 'epic',      baseHP: 78, baseATK: 13.9, baseDEF: 10.6,
-                  ability: { name: 'Void', effect: 'Deal 120 fixed damage' } },
-
-            // ── Legendary creatures (summon-only, one per element) ──────────────
-            16: { id: 16, code: 'FL1', name: 'Pyroclasm', element: 'fire',     emoji: '🌋', rarity: 'legendary', baseHP: 118.3, baseATK: 13.6, baseDEF: 11.2,
-                  ability: { name: 'Eruption',     effect: 'Massive fire damage + empower self' } },
-            17: { id: 17, code: 'WL1', name: 'Kraken',    element: 'water',    emoji: '🦑', rarity: 'legendary', baseHP: 130.8, baseATK: 13.6, baseDEF: 12.5,
-                  ability: { name: 'Tidal Crush',  effect: 'Massive water damage + heal self' } },
-            18: { id: 18, code: 'GL1', name: 'Sylvara',   element: 'grass',    emoji: '🌳', rarity: 'legendary', baseHP: 124.6, baseATK: 14.3, baseDEF: 12.5,
-                  ability: { name: 'Life Bloom',   effect: 'Massive grass damage + restore HP' } },
-            19: { id: 19, code: 'EL1', name: 'Stormwing', element: 'electric', emoji: '🦅', rarity: 'legendary', baseHP: 109.6, baseATK: 14.3, baseDEF: 11.2,
-                  ability: { name: 'Thunderstrike',effect: 'Massive electric damage + stun' } },
-            20: { id: 20, code: 'DL1', name: 'Voidlord',  element: 'dark',     emoji: '🌌', rarity: 'legendary', baseHP: 112.1, baseATK: 14.3, baseDEF: 11.2,
-                  ability: { name: 'Void Collapse', effect: 'Highest damage of all + empower self' } },
-
-            // ── New roster expansion (Fire/Water/Grass/Electric/Dark commons + rares) ──
-            21: { id: 21, code: 'FC2', name: 'Emberling', element: 'fire',     emoji: '🕯️', rarity: 'common', baseHP: 45, baseATK: 14, baseDEF: 5 },
-            22: { id: 22, code: 'FC3', name: 'Ashcoil',   element: 'fire',     emoji: '🌋', rarity: 'common', baseHP: 52, baseATK: 11, baseDEF: 8 },
-            23: { id: 23, code: 'FR2', name: 'Coronark',  element: 'fire',     emoji: '☀️', rarity: 'rare',   baseHP: 61.8, baseATK: 13.4, baseDEF: 7.7 },
-            24: { id: 24, code: 'WC2', name: 'Shellkin',  element: 'water',    emoji: '🐚', rarity: 'common', baseHP: 49, baseATK: 10, baseDEF: 8 },
-            25: { id: 25, code: 'WC3', name: 'Calfling',  element: 'water',    emoji: '🐋', rarity: 'common', baseHP: 44, baseATK: 13, baseDEF: 6 },
-            26: { id: 26, code: 'WR2', name: 'Wavecaller',element: 'water',    emoji: '🌊', rarity: 'rare',   baseHP: 64, baseATK: 11.6, baseDEF: 8.8 },
-            27: { id: 27, code: 'GC2', name: 'Moleburrow',element: 'grass',    emoji: '🦔', rarity: 'common', baseHP: 51, baseATK: 11, baseDEF: 7 },
-            28: { id: 28, code: 'GC3', name: 'Meadowkid', element: 'grass',    emoji: '🐐', rarity: 'common', baseHP: 47, baseATK: 12, baseDEF: 7 },
-            29: { id: 29, code: 'GR2', name: 'Sporeling', element: 'grass',    emoji: '🍄', rarity: 'rare',   baseHP: 62.9, baseATK: 12.5, baseDEF: 8.8 },
-            30: { id: 30, code: 'EC2', name: 'Boltling',  element: 'electric', emoji: '🐿️', rarity: 'common', baseHP: 44, baseATK: 14, baseDEF: 6 },
-            31: { id: 31, code: 'EC3', name: 'Coilspark', element: 'electric', emoji: '🌀', rarity: 'common', baseHP: 48, baseATK: 13, baseDEF: 6 },
-            32: { id: 32, code: 'ER2', name: 'Voltbeak',  element: 'electric', emoji: '🦜', rarity: 'rare',   baseHP: 59.6, baseATK: 13.4, baseDEF: 7.7 },
-            33: { id: 33, code: 'DC2', name: 'Duskwing',  element: 'dark',     emoji: '🦇', rarity: 'common', baseHP: 46, baseATK: 13, baseDEF: 7 },
-            34: { id: 34, code: 'DC3', name: 'Shadowspin',element: 'dark',     emoji: '🕸️', rarity: 'common', baseHP: 50, baseATK: 11, baseDEF: 7 },
-            35: { id: 35, code: 'DR2', name: 'Sicklegrim',element: 'dark',     emoji: '⚰️', rarity: 'rare',   baseHP: 58.5, baseATK: 13.4, baseDEF: 8.8 }
-        };
-
-        // ===== TUTORIAL CONTENT (Floor 0) =====
-        // Narrative + flavor text for the onboarding flow. Phase numbers map to gameState.tutorial.currentPhase.
-        const TUTORIAL_DATA = {
-            // The three starter creatures, reframed as "who you are" (uses real DB names)
-            starters: [
-                {
-                    id: 1, element: 'fire', name: 'Cinder',
-                    flavorText: 'You burned too bright. Too fast, too fierce, too much. Your trainer wanted something they could control. So they left you in the ash.'
-                },
-                {
-                    id: 4, element: 'water', name: 'Droplet',
-                    flavorText: 'You were gentle. Patient. You healed when others wanted you to hurt. They called that weakness — and then they walked away.'
-                },
-                {
-                    id: 7, element: 'grass', name: 'Sprout',
-                    flavorText: 'You grew at your own pace: slow, stubborn, sure. They had no patience for something that took its time. So they stopped waiting.'
-                }
-            ],
-
-            narration: {
-                // Opening — shown before starter selection (Phase 0 -> 1)
-                opening: [
-                    "You weren't always an outcast. You had a trainer once — someone who promised you'd be great together.",
-                    "But one day they decided you weren't enough. Too weak. Too strange. Too inconvenient. So they left you here, alone.",
-                    "But you're not the only one. Somewhere out there are others like you — strays, misfits, the ones nobody came back for. Finding them starts with a single choice: who are you going to be?"
-                ],
-                // After a starter is chosen (Phase 1)
-                starterConfirm: "For the first time, the choice is yours. No trainer. No leash. Just you, and whatever you decide to become. You're alone now — but something tells you that won't last forever.",
-
-                // Tutorial Battle 1 — matching + power bar
-                battle1Intro: [
-                    "A small, half-starved creature creeps out of the brush. It bares its teeth — but its legs are shaking.",
-                    "It's terrified. Cornered. You know that feeling better than anyone. But it won't back down, so neither can you."
-                ],
-                battle1Victory: [
-                    "The little creature sinks down, spent — but it doesn't run. It just looks up at you, waiting to see what you'll do.",
-                    "You crouch and hold out a hand. A long, breathless pause... then it limps over and presses against your side. It chose you."
-                ],
-
-                // Tutorial Battle 2 — elements + switching
-                battle2Intro: [
-                    "The next creature doesn't creep — it strides. It sizes up your lead fighter and bares its teeth, certain it has the advantage.",
-                    "And it does: its element is strong against yours. Charging in head-first would be a mistake — but you're not alone anymore. Let the right ally take the lead."
-                ],
-                battle2Victory: [
-                    "Outmatched at its own game, the creature finally yields. It looks between you and the ally who bested it, and something in it settles.",
-                    "It falls in step beside the others. Three of you now — different strengths, different weaknesses, all covering for each other."
-                ],
-
-                // Tutorial Battle 3 — abilities
-                battle3Intro: [
-                    "Your team has grown — and so have they. Battling together has made your creatures stronger, sharper, surer of themselves.",
-                    "Strong enough that they've each learned a special move: an ability. This next fight is the place to try one out."
-                ],
-                battle3Victory: [
-                    "The creature staggers back, awed by the force your team just brought to bear. It doesn't even try to flee.",
-                    "Abilities, elements, teamwork — you're starting to understand how all the pieces fit. You're ready for what's next."
-                ],
-
-                // Phase 4 → 5: bridge from battles to shop tour
-                postBattle3: [
-                    "You've got the basics now: matching, switching, abilities. But raw skill only takes you so far.",
-                    "You're going to need resources. Strategy. A real foundation.",
-                    "There's a place for that — a shop, a summon well, a chance to grow. Head there and let's see what's on offer."
-                ],
-
-                tutorialComplete: [
-                    "You came here with nothing. Now you have a team, a purpose, and the first floor of a world that doesn't know what you're capable of yet.",
-                    "Whatever comes next — you face it together."
-                ]
-            },
-
-            // In-battle coaching, per tutorial battle
-            coach: {
-                // Battle 1 — matching + power bar
-                battle1: {
-                    start:    "🎯 Drag a tile onto a neighbor to line up 3 or more of the same color.",
-                    matched:  "⚡ Nice match! Every match charges the power bar beside your creature.",
-                    charging: "🔋 The higher that bar climbs, the harder you'll hit. Keep matching!",
-                    full:     "💥 Power maxed! It unleashes as one big attack when your turn ends.",
-                    enemy:    "👀 Now the enemy takes its turn. Watch what it does — then control comes back to you."
-                },
-                // Battle 2 — elements + switching (most text is built dynamically; see coachTextBattle2)
-                battle2: {
-                    start:  "⚠️ This enemy's element is STRONG against your starter. Switch to the ally that beats it!",
-                    enemy:  "👀 The enemy strikes. At an element disadvantage you take more and deal less — that's why matchups matter."
-                },
-                // Battle 3 — abilities
-                battle3: {
-                    start:    "✨ Your ability is unlocked! Match tiles of one element — every 4 of your most-matched color this turn adds a charge. Fire it quick for a small hit, or save up 3 charges for a devastating strike!",
-                    matched:  "⚡ Nice! Charges come from the total tiles of your dominant color matched this turn (cascades count too) — every 4 adds an A1 charge, every 5 adds an A2 charge. 3 charges = max damage.",
-                    charging: "🔋 Power bar's filling and your ability is charging. Mix big power releases with a fully-charged ability to deal serious damage!",
-                    full:     "💥 Power maxed! Unleash your attack — and if your ability bar is full, now's the time to dump it all in one hit!",
-                    enemy:    "👀 The enemy takes its turn. Then it's back to you — keep charging that ability!"
-                }
-            }
-        };
-
-        // Evolved form names, indexed [tier1, tier2] per baseId. Tier 0 uses the base name.
-        const EVO_NAMES = {
-            1:  ['Pyrelet',   'Cinderwing'],
-            2:  ['Flarejet',  'Infernath'],
-            3:  ['Magmaw',    'Volcanor'],
-            4:  ['Ripplet',   'Tideflow'],
-            5:  ['Surger',    'Maelstrom'],
-            6:  ['Drakewave', 'Abyssal'],
-            7:  ['Saplet',    'Verdania'],
-            8:  ['Bramble',   'Thornlord'],
-            9:  ['Maneox',    'Gaiakin'],
-            10: ['Voltling',  'Stormbit'],
-            11: ['Arcjolt',   'Thundroar'],
-            12: ['Voltcharger', 'Thunderhide'],
-            13: ['Umbril',    'Nightmaw'],
-            14: ['Wraithe',   'Phantomos'],
-            15: ['Voidling',  'Eclipsor'],
-            16: ['Volcrath',   'Emberlord'],
-            17: ['Tidewraith', 'Deepking'],
-            18: ['Sylvanor',   'Forestborn'],
-            19: ['Thunderclad','Stormknight'],
-            20: ['Darkwhisper','Voidknight'],
-            21: ['Solkit',     'Coronis'],
-            22: ['Cindermaw',  'Vulcarion'],
-            23: ['Solmirus',   'Solmonarch'],
-            24: ['Shellguard', 'Shellsovereign'],
-            25: ['Finbrook',   'Tidebreacher'],
-            26: ['Ripcurrent', 'Thalassor'],
-            27: ['Rootpaw',    'Loamhide'],
-            28: ['Pasturehoof','Verdantaur'],
-            29: ['Mycelet',    'Fungara'],
-            30: ['Sparkleap',  'Voltstride'],
-            31: ['Voltcoil',   'Dynamek'],
-            32: ['Sparkcrane', 'Thunderplume'],
-            33: ['Hollowmoth', 'Voidlure'],
-            34: ['Duskweave',  'Voidrix'],
-            35: ['Scytheclaw', 'Grimreaper']
-        };
-
-        // Element advantage web (each element beats two others):
-        //   electric → water, fire
-        //   fire     → grass, dark
-        //   grass    → water, electric
-        //   water    → fire, dark
-        //   dark     → grass, electric
-        const elementAdvantages = {
-            electric: ['water',   'fire'    ],
-            fire:     ['grass',   'dark'    ],
-            grass:    ['water',   'electric'],
-            water:    ['fire',    'dark'    ],
-            dark:     ['grass',   'electric']
-        };
         // Quick lookup helpers
         function elementBeats(atkEl, defEl)   { const a = elementAdvantages[atkEl]; return !!a && a.includes(defEl); }
         function elementBeatenBy(el)          { return Object.keys(elementAdvantages).filter(k => elementAdvantages[k].includes(el)); }
@@ -361,407 +146,8 @@
             return others[Math.floor(Math.random() * others.length)];
         }
 
-        // Two abilities per creature. Damage is scaled by the creature's element vs the enemy.
-        //   a1 = straight damage  (armed by clearing a run of 4+)
-        //   a2 = damage + buff/debuff (armed by clearing a run of 5+)
-        // buff kinds: empower, heal, shield, stun,
-        //             burn (fire DoT), poison (grass DoT), reflect (mirror damage),
-        //             double_strike (hold power, release x2), leech (dmg+heal),
-        //             siphon (raise own max power, lower enemy's max next turn), board_corrupt (flip enemy tiles),
-        //             lock_tiles (freeze enemy tile types for N turns)
-        const ABILITIES = {
-            // ── Fire ──────────────────────────────────────────────────────────────
-            // Cinder (common): burn — leaves smoldering after every strike
-            1:  { a1: { name: 'Ember Strike',   power: 2.0, chargePower: [0.75, 1.8, 3.0] },
-                  a1evo1: { name: 'Burn', dot: [0.25, 0.54, 0.83], ticks: 4 },
-                  a1evo2: { name: 'Inferno', dot: [0.1, 0.22, 0.34], hit: [1.0, 2.2, 3.4], ticks: 5 },
-                  a2: { name: "Hotblood", buff: 'enrage', atkBuff: [0.15, 0.3], turns: 2 },
-                  a2evo1: { name: "Backdraft", buff: 'recoil', recoilFrac: 0.05, powerC: [1.5, 3.8] },
-                  a2evo2: { name: "Cremate", buff: 'execute', threshold: [0.1, 0.2] } },
-            // Wildfire (rare): double_strike — volatile burst, charges one turn
-            2:  { a1: { name: 'Fire Fang',       power: 2.2, chargePower: [0.8, 1.9, 3.1] },
-                  a1evo1: { name: 'Scorch', dot: [0.26, 0.56, 0.86], ticks: 4 },
-                  a1evo2: { name: 'Wildfire', dot: [0.1, 0.23, 0.36], hit: [1.0, 2.3, 3.6], ticks: 5 },
-                  a2: { name: "Searing Fang", buff: 'armor_pierce', powerC: [1.5, 3], ignoreDR: [0.05, 0.1] },
-                  a2evo1: { name: "Flame Volley", buff: 'multi_hit', hits: [2, 3], powerC: [1.1, 1.2] },
-                  a2evo2: { name: "Firestorm", buff: 'recoil', recoilFrac: 0.05, powerC: [1.6, 4] } },
-            // Infernal (epic): burn + damage — scorched earth
-            3:  { a1: { name: 'Magma Blast',     power: 2.4, chargePower: [0.9, 2.1, 3.2] },
-                  a1evo1: { name: 'Sear', dot: [0.27, 0.58, 0.89], ticks: 4 },
-                  a1evo2: { name: 'Eruption', dot: [0.1, 0.24, 0.38], hit: [1.0, 2.4, 3.8], ticks: 5 },
-                  a2: { name: "Full Burn", buff: 'scale_high_hp', highMult: [1.5, 4], lowMult: [0.5, 1], hpThresh: 0.5 },
-                  a2evo1: { name: "Molten Lance", buff: 'armor_pierce', powerC: [1.6, 3.3], ignoreDR: [0.05, 0.1] },
-                  a2evo2: { name: "Overheat", buff: 'empower', mult: [2.0, 2.0], minCharge: 2 } },
 
-            // ── Water ─────────────────────────────────────────────────────────────
-            // Droplet (common): shield — defensive water bubble
-            4:  { a1: { name: 'Bubble Shot',     power: 2.0, chargePower: [0.75, 1.8, 3.0] },
-                  a1evo1: { name: 'Erode', dot: [0.25, 0.54, 0.83], ticks: 4 },
-                  a1evo2: { name: 'Maelstrom', dot: [0.1, 0.22, 0.34], hit: [1.0, 2.2, 3.4], ticks: 5 },
-                  a2: { name: "Aqua Veil", buff: 'shield', frac: [0.5, 0.75] },
-                  a2evo1: { name: "Tide Mend", buff: 'regen', pct: [0.05, 0.07], turns: [2, 3] },
-                  a2evo2: { name: "Wellspring", buff: 'heal', pct: [0.09, 0.2], clearDot: true } },
-            // Tidecaller (rare): siphon — redirects enemy power flow
-            5:  { a1: { name: 'Water Pulse',     power: 2.2, chargePower: [0.8, 1.9, 3.1] },
-                  a1evo1: { name: 'Corrode', dot: [0.26, 0.56, 0.86], ticks: 4 },
-                  a1evo2: { name: 'Undertow', dot: [0.1, 0.23, 0.36], hit: [1.0, 2.3, 3.6], ticks: 5 },
-                  a2: { name: "Riptide Snap", buff: 'counter', frac: [0.08, 0.2], turns: 2 },
-                  a2evo1: { name: "Wave Wall", buff: 'shield', frac: [0.5, 0.75] },
-                  a2evo2: { name: "Aegis Tide", buff: 'reflect', frac: [0.25, 0.6] } },
-            // Leviathan (epic): reflect — absorbs hit, sends half back
-            6:  { a1: { name: 'Abyssal Crush',   power: 2.4, chargePower: [0.9, 2.1, 3.2] },
-                  a1evo1: { name: 'Pressure', dot: [0.27, 0.58, 0.89], ticks: 4 },
-                  a1evo2: { name: 'Leviathan Wake', dot: [0.1, 0.24, 0.38], hit: [1.0, 2.4, 3.8], ticks: 5 },
-                  a2: { name: "Frostbind", buff: 'lock_tiles', count: [2, 5] },
-                  a2evo1: { name: "Mirror Pool", buff: 'reflect', frac: [0.25, 0.6] },
-                  a2evo2: { name: "Deep Current", buff: 'absorb', amt: [3, 7] } },
 
-            // ── Grass ─────────────────────────────────────────────────────────────
-            // Sprout (common): poison — nature's toxin, ticks each enemy turn
-            7:  { a1: { name: 'Vine Whip',        power: 2.0, chargePower: [0.75, 1.8, 3.0] },
-                  a1evo1: { name: 'Poison', dot: [0.25, 0.54, 0.83], ticks: 4 },
-                  a1evo2: { name: 'Blight', dot: [0.1, 0.22, 0.34], hit: [1.0, 2.2, 3.4], ticks: 5 },
-                  a2: { name: "Vine Snare", buff: 'lock_tiles', count: [2, 5] },
-                  a2evo1: { name: "Sap Bind", buff: 'leech', turns: [2, 3], powerC: [0.25, 0.3] },
-                  a2evo2: { name: "Bloomheart", buff: 'regen', pct: [0.05, 0.07], turns: [2, 3] } },
-            // Thornvine (rare): leech — drains nutrients from the enemy
-            8:  { a1: { name: 'Thorn Jab',        power: 2.2, chargePower: [0.8, 1.9, 3.1] },
-                  a1evo1: { name: 'Toxin', dot: [0.26, 0.56, 0.86], ticks: 4 },
-                  a1evo2: { name: 'Wilt', dot: [0.1, 0.23, 0.36], hit: [1.0, 2.3, 3.6], ticks: 5 },
-                  a2: { name: "Root Drain", buff: 'siphon', amt: [3, 7] },
-                  a2evo1: { name: "Root Rend", buff: 'def_shred', frac: [0.3, 0.6], turns: 2 },
-                  a2evo2: { name: "Thornward", buff: 'rally', pct: [0.15, 0.35], turns: 3 } },
-            // Wildwood (epic): lock_tiles — roots enemy tiles in place
-            9:  { a1: { name: 'Maul',             power: 2.4, chargePower: [0.9, 2.1, 3.2] },
-                  a1evo1: { name: 'Venom', dot: [0.27, 0.58, 0.89], ticks: 4 },
-                  a1evo2: { name: 'Ravage', dot: [0.1, 0.24, 0.38], hit: [1.0, 2.4, 3.8], ticks: 5 },
-                  a2: { name: "Thorn Counter", buff: 'counter', frac: [0.08, 0.2], turns: 2 },
-                  a2evo1: { name: "Verdant Renewal", buff: 'regen', pct: [0.05, 0.07], turns: [2, 3] },
-                  a2evo2: { name: "Gaia’s Grip", buff: 'def_shred', frac: [0.3, 0.6], turns: 2 } },
-
-            // ── Electric ──────────────────────────────────────────────────────────
-            // Zap (common): lock_tiles (1 type) — shorts out one circuit
-            10: { a1: { name: 'Spark Shot',        power: 2.0, chargePower: [0.75, 1.8, 3.0] },
-                  a1evo1: { name: 'Overload', dot: [0.25, 0.54, 0.83], ticks: 4 },
-                  a1evo2: { name: 'Surge', dot: [0.1, 0.22, 0.34], hit: [1.0, 2.2, 3.4], ticks: 5 },
-                  a2: { name: "Static Snare", buff: 'tile_steal', count: [3, 7] },
-                  a2evo1: { name: "Short Circuit", buff: 'energy_denial', amt: [2, 5] },
-                  a2evo2: { name: "Voltage Spike", buff: 'overcharge', amt: [3, 7] } },
-            // Stormchild (rare): siphon — taps enemy power current
-            11: { a1: { name: 'Thunderbolt',       power: 2.2, chargePower: [0.8, 1.9, 3.1] },
-                  a1evo1: { name: 'Charge', dot: [0.26, 0.56, 0.86], ticks: 4 },
-                  a1evo2: { name: 'Thunderclap', dot: [0.1, 0.23, 0.36], hit: [1.0, 2.3, 3.6], ticks: 5 },
-                  a2: { name: "Discharge", buff: 'siphon', amt: [3, 7] },
-                  a2evo1: { name: "Lightning Reposition", buff: 'ally_swap_free', preChargeA1: [false, true] },
-                  a2evo2: { name: "Hypercharge", buff: 'extra_turn', minCharge: 2 } },
-            // Voltaic (epic): double_strike — builds to explosive double release
-            12: { a1: { name: 'Overload',          power: 2.4, chargePower: [0.9, 2.1, 3.2] },
-                  a1evo1: { name: 'Static', dot: [0.27, 0.58, 0.89], ticks: 4 },
-                  a1evo2: { name: 'Chainstorm', dot: [0.1, 0.24, 0.38], hit: [1.0, 2.4, 3.8], ticks: 5 },
-                  a2: { name: "Jolt Lockdown", buff: 'speed_down', frac: [0.5, 0.75] },
-                  a2evo1: { name: "Grounding Bolt", buff: 'interrupt', clearA2: [false, true] },
-                  a2evo2: { name: "System Crash", buff: 'energy_denial', amt: [2, 5] } },
-
-            // ── Dark ──────────────────────────────────────────────────────────────
-            // Shade (common): leech — feeds on life force
-            13: { a1: { name: 'Shadow Claw',       power: 2.0, chargePower: [0.75, 1.8, 3.0] },
-                  a1evo1: { name: 'Torment', dot: [0.25, 0.54, 0.83], ticks: 4 },
-                  a1evo2: { name: 'Nightmare', dot: [0.1, 0.22, 0.34], hit: [1.0, 2.2, 3.4], ticks: 5 },
-                  a2: { name: "Shadow Retreat", buff: 'ally_swap_shield', frac: [0.4, 0.7] },
-                  a2evo1: { name: "Wither", buff: 'atk_down', frac: [0.2, 0.5], turns: 2 },
-                  a2evo2: { name: "Vengeful Spirit", buff: 'on_death', powerC: [4, 6], window: 2 } },
-            // Nightbane (rare): reflect — dark mirror returns force
-            14: { a1: { name: 'Spirit Lance',      power: 2.2, chargePower: [0.8, 1.9, 3.1] },
-                  a1evo1: { name: 'Hex', dot: [0.26, 0.56, 0.86], ticks: 4 },
-                  a1evo2: { name: 'Doom Lance', dot: [0.1, 0.23, 0.36], hit: [1.0, 2.3, 3.6], ticks: 5 },
-                  a2: { name: "Nightbite", buff: 'counter', frac: [0.08, 0.2], turns: 2 },
-                  a2evo1: { name: "Gloom", buff: 'weaken', frac: [0.5, 1], nullify: [false, true] },
-                  a2evo2: { name: "Eclipse", buff: 'enrage', atkBuff: [0.17, 0.4], turns: 2 } },
-            // Void (epic): board_corrupt — warps enemy board tiles to dark
-            15: { a1: { name: 'Void Rend',         power: 2.4, chargePower: [0.9, 2.1, 3.2] },
-                  a1evo1: { name: 'Curse', dot: [0.27, 0.58, 0.89], ticks: 4 },
-                  a1evo2: { name: 'Oblivion', dot: [0.1, 0.24, 0.38], hit: [1.0, 2.4, 3.8], ticks: 5 },
-                  a2: { name: "Hexcloud", buff: 'weaken', frac: [0.75, 1], nullify: [false, true] },
-                  a2evo1: { name: "Shadowmeld", buff: 'tile_steal', count: [3, 7] },
-                  a2evo2: { name: "Oblivion Veil", buff: 'board_corrupt', count: [5, 10], dr: [0.33, 0.5] } },
-
-            // ── Legendary — A2 unchanged; A3 slot planned for future ──────────────
-            16: { a1: { name: 'Magma Surge',    power: 2.8, chargePower: [1.0, 2.2, 3.3] },
-                  a1evo1: { name: 'Kindle', dot: [0.28, 0.60, 0.92], ticks: 4 },
-                  a1evo2: { name: 'Cataclysm', dot: [0.1, 0.25, 0.4], hit: [1.0, 2.5, 4.0], ticks: 5 }, a2: { name: "Magma Core", buff: 'scale_high_hp', highMult: [1.5, 4], lowMult: [0.5, 1], hpThresh: 0.5 },
-                  a2evo1: { name: "Immolate", buff: 'execute', threshold: [0.1, 0.2] },
-                  a2evo2: { name: "Supernova", buff: 'recoil', recoilFrac: 0.05, powerC: [1.5, 3.8] } },
-            17: { a1: { name: 'Tentacle Slam',  power: 2.8, chargePower: [1.0, 2.2, 3.3] },
-                  a1evo1: { name: 'Abrade', dot: [0.28, 0.60, 0.92], ticks: 4 },
-                  a1evo2: { name: 'Krakenfall', dot: [0.1, 0.25, 0.4], hit: [1.0, 2.5, 4.0], ticks: 5 }, a2: { name: "Abyssal Undertow", buff: 'force_swap', bonusHitPower: [0, 1.3], fallbackPower: [1.4, 2.4] },
-                  a2evo1: { name: "Riptide Guard", buff: 'absorb', amt: [3, 7] },
-                  a2evo2: { name: "Leviathan’s Return", buff: 'revive', minCharge: 2, pct: 0.5, window: 2 } },
-            18: { a1: { name: 'Ancient Bough',  power: 2.8, chargePower: [1.0, 2.2, 3.3] },
-                  a1evo1: { name: 'Spores', dot: [0.28, 0.60, 0.92], ticks: 4 },
-                  a1evo2: { name: 'Verdant Wrath', dot: [0.1, 0.25, 0.4], hit: [1.0, 2.5, 4.0], ticks: 5 }, a2: { name: "Wild Growth", buff: 'tile_steal', count: [3, 7] },
-                  a2evo1: { name: "Grove Blessing", buff: 'rally', pct: [0.15, 0.35], turns: 3 },
-                  a2evo2: { name: "World Tree", buff: 'heal', pct: [0.09, 0.2], clearDot: true } },
-            19: { a1: { name: 'Storm Dive',     power: 2.8, chargePower: [1.0, 2.2, 3.3] },
-                  a1evo1: { name: 'Ionize', dot: [0.28, 0.60, 0.92], ticks: 4 },
-                  a1evo2: { name: 'Tempest Break', dot: [0.1, 0.25, 0.4], hit: [1.0, 2.5, 4.0], ticks: 5 }, a2: { name: "Static Surge", buff: 'overcharge', amt: [3, 7] },
-                  a2evo1: { name: "Overclock", buff: 'extra_turn', minCharge: 2 },
-                  a2evo2: { name: "Stormrelay", buff: 'tag_bonus', amt: [4, 10] } },
-            20: { a1: { name: 'Oblivion Rend',  power: 2.8, chargePower: [1.0, 2.2, 3.3] },
-                  a1evo1: { name: 'Haunt', dot: [0.28, 0.60, 0.92], ticks: 4 },
-                  a1evo2: { name: 'Soul Reaver', dot: [0.1, 0.25, 0.4], hit: [1.0, 2.5, 4.0], ticks: 5 }, a2: { name: "Void Maw", buff: 'board_corrupt', count: [5, 10], dr: [0.33, 0.5] },
-                  a2evo1: { name: "Dying Curse", buff: 'on_death', powerC: [4, 6], window: 2 },
-                  a2evo2: { name: "Dread Command", buff: 'inspire', a2: [false, true] } },
-
-            // ── New roster expansion ─────────────────────────────────────────────
-            // Emberling (common): multi_hit — quick spark barrage
-            21: { a1: { name: 'Spark Bite',   power: 2.0, chargePower: [0.75, 1.8, 3.0] },
-                  a1evo1: { name: 'Smolder', dot: [0.25, 0.54, 0.83], ticks: 4 },
-                  a1evo2: { name: 'Flareburst', dot: [0.1, 0.22, 0.34], hit: [1.0, 2.2, 3.4], ticks: 5 },
-                  a2: { name: "Flash Ignite", buff: 'recoil', recoilFrac: 0.05, powerC: [1.5, 3.8] },
-                  a2evo1: { name: "Scaleburn", buff: 'def_shred', frac: [0.3, 0.6], turns: 2 },
-                  a2evo2: { name: "Firecracker Barrage", buff: 'multi_hit', hits: [2, 3], powerC: [1.1, 1.2] } },
-            // Ashcoil (common): atk_down — choking ash cloud
-            22: { a1: { name: 'Coil Strike',  power: 2.0, chargePower: [0.75, 1.8, 3.0] },
-                  a1evo1: { name: 'Char', dot: [0.25, 0.54, 0.83], ticks: 4 },
-                  a1evo2: { name: 'Ashfall', dot: [0.1, 0.22, 0.34], hit: [1.0, 2.2, 3.4], ticks: 5 },
-                  a2: { name: "Ashen Ward", buff: 'shield', frac: [0.5, 0.75] },
-                  a2evo1: { name: "Ash Effigy", buff: 'decoy', hits: [1, 2], turns: 3 },
-                  a2evo2: { name: "Choking Ash", buff: 'atk_down', frac: [0.2, 0.5], turns: 2 } },
-            // Coronark (rare): empower — solar self-buff
-            23: { a1: { name: 'Solar Lance',  power: 2.2, chargePower: [0.8, 1.9, 3.1] },
-                  a1evo1: { name: 'Radiant Burn', dot: [0.26, 0.56, 0.86], ticks: 4 },
-                  a1evo2: { name: 'Corona Flare', dot: [0.1, 0.23, 0.36], hit: [1.0, 2.3, 3.6], ticks: 5 },
-                  a2: { name: "Solar Flare", buff: 'overcharge', amt: [3, 7] },
-                  a2evo1: { name: "Radiant Aura", buff: 'rally', pct: [0.15, 0.35], turns: 3 },
-                  a2evo2: { name: "Corona Burst", buff: 'empower', mult: [2.0, 2.0], minCharge: 2 } },
-            // Shellkin (common): shield — turtle-shell tank
-            24: { a1: { name: 'Shell Ram',    power: 2.0, chargePower: [0.75, 1.8, 3.0] },
-                  a1evo1: { name: 'Erosion', dot: [0.25, 0.54, 0.83], ticks: 4 },
-                  a1evo2: { name: 'Shellstorm', dot: [0.1, 0.22, 0.34], hit: [1.0, 2.2, 3.4], ticks: 5 },
-                  a2: { name: "Shell Bash", buff: 'counter', frac: [0.08, 0.2], turns: 2 },
-                  a2evo1: { name: "Barnacle Ward", buff: 'reflect', frac: [0.25, 0.6] },
-                  a2evo2: { name: "Fortress Shell", buff: 'shield', frac: [0.5, 0.75] } },
-            // Calfling (common): leech — drains on hit
-            25: { a1: { name: 'Splash Tackle',power: 2.0, chargePower: [0.75, 1.8, 3.0] },
-                  a1evo1: { name: 'Chill', dot: [0.25, 0.54, 0.83], ticks: 4 },
-                  a1evo2: { name: 'Wave Snap', dot: [0.1, 0.22, 0.34], hit: [1.0, 2.2, 3.4], ticks: 5 },
-                  a2: { name: "Nibble", buff: 'siphon', amt: [3, 7] },
-                  a2evo1: { name: "Grazing Recovery", buff: 'regen', pct: [0.05, 0.07], turns: [2, 3] },
-                  a2evo2: { name: "Feral Bite", buff: 'leech', turns: [2, 3], powerC: [0.25, 0.3] } },
-            // Wavecaller (rare): weaken — crashing wave saps the next hit
-            26: { a1: { name: 'Wave Lash',    power: 2.2, chargePower: [0.8, 1.9, 3.1] },
-                  a1evo1: { name: 'Corrosion', dot: [0.26, 0.56, 0.86], ticks: 4 },
-                  a1evo2: { name: 'Tsunami Break', dot: [0.1, 0.23, 0.36], hit: [1.0, 2.3, 3.6], ticks: 5 },
-                  a2: { name: "Undertow Pull", buff: 'tile_steal', count: [3, 7] },
-                  a2evo1: { name: "Riptide Drag", buff: 'speed_down', frac: [0.5, 0.75] },
-                  a2evo2: { name: "Crashing Wave", buff: 'weaken', frac: [0.5, 1], nullify: [false, true] } },
-            // Moleburrow (common): interrupt — burrow disrupts the charge
-            27: { a1: { name: 'Claw Dig',     power: 2.0, chargePower: [0.75, 1.8, 3.0] },
-                  a1evo1: { name: 'Rot', dot: [0.25, 0.54, 0.83], ticks: 4 },
-                  a1evo2: { name: 'Landslide', dot: [0.1, 0.22, 0.34], hit: [1.0, 2.2, 3.4], ticks: 5 },
-                  a2: { name: "Burrow Trap", buff: 'lock_tiles', count: [2, 5] },
-                  a2evo1: { name: "Root Snap", buff: 'def_shred', frac: [0.3, 0.6], turns: 2 },
-                  a2evo2: { name: "Tunnel Ambush", buff: 'interrupt', clearA2: [false, true] } },
-            // Meadowkid (common): inspire — pastoral support
-            28: { a1: { name: 'Hoof Kick',    power: 2.0, chargePower: [0.75, 1.8, 3.0] },
-                  a1evo1: { name: 'Wilting', dot: [0.25, 0.54, 0.83], ticks: 4 },
-                  a1evo2: { name: 'Overgrowth', dot: [0.1, 0.22, 0.34], hit: [1.0, 2.2, 3.4], ticks: 5 },
-                  a2: { name: "Meadow Breeze", buff: 'heal', pct: [0.09, 0.2], clearDot: true },
-                  a2evo1: { name: "Pasture Cheer", buff: 'rally', pct: [0.15, 0.35], turns: 3 },
-                  a2evo2: { name: "Blooming Support", buff: 'inspire', a2: [false, true] } },
-            // Sporeling (rare): board_corrupt — spreads spores across the board
-            29: { a1: { name: 'Spore Burst',  power: 2.2, chargePower: [0.8, 1.9, 3.1] },
-                  a1evo1: { name: 'Mildew', dot: [0.26, 0.56, 0.86], ticks: 4 },
-                  a1evo2: { name: 'Fungal Surge', dot: [0.1, 0.23, 0.36], hit: [1.0, 2.3, 3.6], ticks: 5 },
-                  a2: { name: "Paralytic Spores", buff: 'paralyze', turns: [1, 2] },
-                  a2evo1: { name: "Toxic Spores", buff: 'atk_down', frac: [0.2, 0.5], turns: 2 },
-                  a2evo2: { name: "Fungal Bloom", buff: 'board_corrupt', count: [5, 10], dr: [0.33, 0.5] } },
-            // Boltling (common): energy_denial — drains opponent charge
-            30: { a1: { name: 'Volt Peck',    power: 2.0, chargePower: [0.75, 1.8, 3.0] },
-                  a1evo1: { name: 'Fritz', dot: [0.25, 0.54, 0.83], ticks: 4 },
-                  a1evo2: { name: 'Overvolt', dot: [0.1, 0.22, 0.34], hit: [1.0, 2.2, 3.4], ticks: 5 },
-                  a2: { name: "Static Nip", buff: 'siphon', amt: [3, 7] },
-                  a2evo1: { name: "Jolt", buff: 'speed_down', frac: [0.5, 0.75] },
-                  a2evo2: { name: "Short Fuse", buff: 'energy_denial', amt: [2, 5] } },
-            // Coilspark (common): tag_bonus — coiled charge passed on swap
-            31: { a1: { name: 'Coil Snap',    power: 2.0, chargePower: [0.75, 1.8, 3.0] },
-                  a1evo1: { name: 'Frizzle', dot: [0.25, 0.54, 0.83], ticks: 4 },
-                  a1evo2: { name: 'Arc Discharge', dot: [0.1, 0.22, 0.34], hit: [1.0, 2.2, 3.4], ticks: 5 },
-                  a2: { name: "Coil Charge", buff: 'overcharge', amt: [3, 7] },
-                  a2evo1: { name: "Induction Coil", buff: 'absorb', amt: [3, 7] },
-                  a2evo2: { name: "Charge Relay", buff: 'tag_bonus', amt: [4, 10] } },
-            // Voltbeak (rare): revive — phoenix-shock resurrection
-            32: { a1: { name: 'Talon Bolt',   power: 2.2, chargePower: [0.8, 1.9, 3.1] },
-                  a1evo1: { name: 'Static Peck', dot: [0.26, 0.56, 0.86], ticks: 4 },
-                  a1evo2: { name: 'Raptor Surge', dot: [0.1, 0.23, 0.36], hit: [1.0, 2.3, 3.6], ticks: 5 },
-                  a2: { name: "Beak Strike", buff: 'armor_pierce', powerC: [1.5, 3], ignoreDR: [0.05, 0.1] },
-                  a2evo1: { name: "Adrenal Spark", buff: 'extra_turn', minCharge: 2 },
-                  a2evo2: { name: "Phoenix Circuit", buff: 'revive', minCharge: 2, pct: 0.5, window: 2 } },
-            // Duskwing (common): speed_down — dusk slows the target
-            33: { a1: { name: 'Wing Slash',   power: 2.0, chargePower: [0.75, 1.8, 3.0] },
-                  a1evo1: { name: 'Fade', dot: [0.25, 0.54, 0.83], ticks: 4 },
-                  a1evo2: { name: 'Twilight Rend', dot: [0.1, 0.22, 0.34], hit: [1.0, 2.2, 3.4], ticks: 5 },
-                  a2: { name: "Dusk Veil", buff: 'reflect', frac: [0.25, 0.6] },
-                  a2evo1: { name: "Wing Rend", buff: 'def_shred', frac: [0.3, 0.6], turns: 2 },
-                  a2evo2: { name: "Twilight Snare", buff: 'speed_down', frac: [0.5, 0.75] } },
-            // Shadowspin (common): on_death — curse fires as it falls
-            34: { a1: { name: 'Web Strike',   power: 2.0, chargePower: [0.75, 1.8, 3.0] },
-                  a1evo1: { name: 'Unravel', dot: [0.25, 0.54, 0.83], ticks: 4 },
-                  a1evo2: { name: 'Shadow Weave', dot: [0.1, 0.22, 0.34], hit: [1.0, 2.2, 3.4], ticks: 5 },
-                  a2: { name: "Web Trap", buff: 'lock_tiles', count: [2, 5] },
-                  a2evo1: { name: "Shadow Thread", buff: 'siphon', amt: [3, 7] },
-                  a2evo2: { name: "Final Curse", buff: 'on_death', powerC: [4, 6], window: 2 } },
-            // Sicklegrim (rare): execute — reaper finishes the weak
-            35: { a1: { name: 'Sickle Cut',   power: 2.2, chargePower: [0.8, 1.9, 3.1] },
-                  a1evo1: { name: 'Blight Edge', dot: [0.26, 0.56, 0.86], ticks: 4 },
-                  a1evo2: { name: 'Grim Harvest', dot: [0.1, 0.23, 0.36], hit: [1.0, 2.3, 3.6], ticks: 5 },
-                  a2: { name: "Sickle Slash", buff: 'armor_pierce', powerC: [1.6, 3.3], ignoreDR: [0.05, 0.1] },
-                  a2evo1: { name: "Grim Omen", buff: 'weaken', frac: [0.75, 1], nullify: [false, true] },
-                  a2evo2: { name: "Reaper's Toll", buff: 'execute', threshold: [0.1, 0.2] } }
-        };
-
-        // ===================================================================
-        // PASSIVE ABILITY SYSTEM
-        // One always-on passive per species (not player-equipped — no loadout-editor
-        // involvement). Keyed by the same numeric creature id as ABILITIES/creatureDatabase.
-        //
-        // Each entry's `buff` + numeric fields are real, wired gameplay data — 34 of the 35
-        // passives below have a working chokepoint hook somewhere in the file (see the
-        // per-hook comments near each phase below, and PASSIVE_ABILITY_SYSTEM.md for the full
-        // roster + which function handles which buff). The one exception, Voltbeak's Chain
-        // Reaction (`power_on_cascade`), is honestly self-flagged `deferred: true` in its own
-        // table entry below because cascade detection isn't exposed to the ability system yet.
-        //
-        // UNLOCK MODEL: essence-gated per creature INSTANCE (not species-wide, not level-
-        // gated) — a one-time purchase from that creature's own element wallet, same pattern
-        // as the existing Bond-3 elemental aura (`buyCreatureAura`). Cost scales by rarity so
-        // it's a second, independent balance lever from the ability's own numbers.
-        //
-        // ARCHITECTURE RULE: `getPassive(creature)` is the ONLY function that should ever
-        // return a usable passive entry — it returns null whenever the instance hasn't
-        // unlocked it, regardless of what's in PASSIVE_TABLE. Every hook must call
-        // getPassive(), never read PASSIVE_TABLE[id] directly, so "is it unlocked" is only
-        // solved once instead of re-checked in every hook.
-        // ===================================================================
-        const PASSIVE_UNLOCK_COST = { common: 10, rare: 15, epic: 20, legendary: 30 };
-
-        const PASSIVE_TABLE = {
-            // ── Fire ──────────────────────────────────────────────────────────────
-            1:  { name: 'Ember Cache', category: 'Power Economy',
-                  desc: 'Gains a power bar whenever it lands a match involving Fire tiles.',
-                  buff: 'power_on_match', el: 'fire', amt: 1 },
-            2:  { name: 'Element Adept', category: 'Elemental Identity',
-                  desc: 'Increase element advantage to 1.4x against Grass and Dark.',
-                  buff: 'element_matchup_offense', targets: ['grass', 'dark'], mult: 1.4 },
-            3:  { name: 'Blaze Command', category: 'Team/Leader',
-                  desc: 'While leading the team (team slot 0), the whole team gets a flat ATK bonus.',
-                  buff: 'team_leader_stat_buff', stat: 'atk', frac: 0.08 },
-            16: { name: 'Molten Core', category: 'Power Economy',
-                  desc: 'Gains a power bar whenever it deals damage of any kind, from a match or an ability.',
-                  buff: 'power_on_damage_dealt', amt: 1 },
-            21: { name: 'Flash Point', category: 'Damage/Mitigation',
-                  desc: 'Deals bonus damage specifically on the very first hit it lands each battle.',
-                  buff: 'first_hit_bonus', frac: 0.25 },   // was 0.5 (1.5x) — lowered 2026-07-27 to 1.25x
-            22: { name: 'Smoldering Touch', category: 'Status/DoT',
-                  desc: 'Its own DoT effects deal more damage.',
-                  buff: 'dot_output_mult', frac: 0.15 },
-            23: { name: 'Corona Pulse', category: 'Board Interaction',
-                  desc: 'Whenever Coronark lands a match-5 (any element), converts nearby tiles to Fire.',
-                  buff: 'tile_convert_on_match', minSize: 5, tiles: 2, chance: 1.0, convertTo: 'fire' },
-
-            // ── Water ─────────────────────────────────────────────────────────────
-            4:  { name: 'Tidal Reserve', category: 'Power Economy',
-                  desc: 'Enters battle with free power bars already banked.',
-                  buff: 'power_on_battle_start', amt: 3 },
-            5:  { name: 'Thick Hide', category: 'Elemental Identity',
-                  desc: 'Decrease element disadvantage to 1.2x from Electric and Grass.',
-                  buff: 'element_matchup_defense', sources: ['electric', 'grass'], mult: 1.2 },
-            6:  { name: 'Deep Anchor', category: 'Swap/Tempo',
-                  desc: 'Leviathan does not lose ability charges when swapping in or out.',
-                  buff: 'no_charge_loss_on_swap' },
-            17: { name: 'Abyssal Splash', category: 'Damage/Mitigation',
-                  desc: "On landing a hit, also deals chip damage to all other living enemies.",
-                  buff: 'splash_damage', frac: 0.10 },
-            24: { name: 'Hard Shell', category: 'Damage/Mitigation',
-                  desc: 'Takes a flat % less damage from all direct attacks, applied AFTER DEF and after any DR-ignoring effects.',
-                  buff: 'flat_mitigation', frac: 0.08 },
-            25: { name: 'Soothing Aura', category: 'Status/DoT',
-                  desc: 'Immune to enemy-inflicted DoT effects (poison, burn, A1 DoT) while active.',
-                  buff: 'dot_immunity' },
-            26: { name: 'Current Pull', category: 'Board Interaction',
-                  desc: 'Gains a power bar whenever it lands a match of 4 or more tiles involving Water tiles.',
-                  buff: 'power_on_match', el: 'water', amt: 1, minSize: 4 },
-
-            // ── Grass ─────────────────────────────────────────────────────────────
-            7:  { name: 'Photosynthesis', category: 'Power Economy',
-                  desc: 'Gains a bonus power bar automatically every 2 turns, even without matching.',
-                  buff: 'power_on_interval', turns: 2, amt: 1 },
-            8:  { name: 'Element Adept', category: 'Elemental Identity',
-                  desc: 'Increase element advantage to 1.4x against Water and Electric.',
-                  buff: 'element_matchup_offense', targets: ['water', 'electric'], mult: 1.4 },
-            9:  { name: 'Overgrowth Fury', category: 'Conditional/Threshold',
-                  desc: 'Deals bonus damage while below 30% HP.',
-                  buff: 'threshold_damage_bonus', hpFrac: 0.3, direction: 'below', bonusFrac: 0.25 },
-            18: { name: 'World Bloom', category: 'Status/DoT',
-                  desc: 'Heals a flat % of max HP after each round.',
-                  buff: 'heal_per_round', frac: 0.03 },
-            27: { name: 'Dig In', category: 'Damage/Mitigation',
-                  desc: 'The first hit Moleburrow takes each battle is fully negated.',
-                  buff: 'block_first_hit', frac: 1.0 },
-            28: { name: 'Hardy Constitution', category: 'Status/DoT',
-                  desc: 'Any negative status effect applied to Meadowkid is capped at a 1-turn duration.',
-                  buff: 'debuff_duration_cap', turns: 1 },
-            29: { name: 'Spore Drift', category: 'Board Interaction',
-                  desc: 'Matching Grass tiles has a chance to passively convert 1 random enemy-weak tile.',
-                  buff: 'tile_convert_on_match', minSize: 1, tiles: 1, chance: 0.25, el: 'grass', convertTo: 'weakest' },
-
-            // ── Electric ──────────────────────────────────────────────────────────
-            10: { name: 'Static Cling', category: 'Power Economy',
-                  desc: 'Gains a power bar whenever it lands a match involving Electric tiles.',
-                  buff: 'power_on_match', el: 'electric', amt: 1 },
-            11: { name: 'Thick Hide', category: 'Elemental Identity',
-                  desc: 'Decrease element disadvantage to 1.2x from Grass and Dark.',
-                  buff: 'element_matchup_defense', sources: ['grass', 'dark'], mult: 1.2 },
-            12: { name: 'Overflow', category: 'Power Economy',
-                  desc: "Sparkhorn's power bar cap is higher than normal.",
-                  buff: 'power_cap_bonus', amt: 2 },
-            19: { name: 'Storm Vanguard', category: 'Team/Leader',
-                  desc: 'While leading the team, the whole team gets a flat DEF bonus.',
-                  buff: 'team_leader_stat_buff', stat: 'def', frac: 0.08 },
-            30: { name: 'Static Shock', category: 'Damage/Mitigation',
-                  desc: 'Deals chip damage back to the attacker whenever hit by a direct attack.',
-                  buff: 'reflect_on_hit', frac: 0.10 },
-            31: { name: 'Charged Barbs', category: 'Status/DoT',
-                  desc: 'Its attacks apply a small stacking DoT on top of normal damage, weaker than standard DoT ticks.',
-                  buff: 'minor_dot_on_hit', pctMaxHp: 0.03, turns: 2 },
-            32: { name: 'Chain Reaction', category: 'Board Interaction',
-                  desc: 'Whenever a cascade (chain match from one swap) occurs, gains a power bar once.',
-                  buff: 'power_on_cascade', amt: 1,
-                  deferred: true /* cascade detection not yet exposed to the ability system — see Phase 7 */ },
-
-            // ── Dark ──────────────────────────────────────────────────────────────
-            13: { name: 'Shadow Toll', category: 'Power Economy',
-                  desc: 'Gains a power bar whenever it takes a single hit dealing 10%+ of its max HP.',
-                  buff: 'power_on_damage_taken', thresholdFrac: 0.10, amt: 1 },
-            14: { name: 'Element Adept', category: 'Elemental Identity',
-                  desc: 'Increase element advantage to 1.4x against Grass and Electric.',
-                  buff: 'element_matchup_offense', targets: ['grass', 'electric'], mult: 1.4 },
-            15: { name: 'Umbral Static', category: 'Board Interaction',
-                  desc: 'Whenever Void lands a match of 4 or more, converts an enemy tile to Dark.',
-                  buff: 'tile_convert_on_match', minSize: 4, tiles: 1, chance: 1.0, el: 'dark', convertTo: 'dark', board: 'enemy' },
-            20: { name: 'Soul Anchor', category: 'Swap/Tempo',
-                  desc: "Whenever a teammate faints, stuns the enemy for 1 turn (they can't act on their next turn).",
-                  buff: 'stun_enemy_on_ally_faint', turns: 1 },
-            33: { name: 'Wing Guard', category: 'Damage/Mitigation',
-                  desc: 'Gains a DEF bonus while below 50% HP.',
-                  buff: 'def_bonus_below_hp', hpFrac: 0.5, defBonusFrac: 0.15 },
-            34: { name: 'Creeping Dread', category: 'Status/DoT',
-                  desc: 'Status effects AND DoT effects that Shadowspin inflicts last 1 extra turn.',
-                  buff: 'own_debuff_duration_bonus', turns: 1 },
-            35: { name: 'Harvest Pattern', category: 'Board Interaction',
-                  desc: 'Match-4s involving Dark tiles have a chance to also grant a bonus A2 charge tick.',
-                  buff: 'power_on_match', el: 'dark', amt: 1, minSize: 4, chance: 0.25 },
-        };
 
         // Single choke point for reading a creature's passive — see architecture note above.
         // Returns null whenever the instance hasn't purchased it, regardless of PASSIVE_TABLE.
@@ -1141,15 +527,6 @@
             </div>`;
         }
 
-        const ARM_A1_LEN = 4; // dominant-element tiles matched this turn (across cascades) to arm A1
-        const ARM_A2_LEN = 5; // dominant-element tiles matched this turn (across cascades) to arm A2
-        // Ability charge system: each ability builds charges from matches and can be
-        // fired once it holds at least 1 charge. A match-4 adds 1 charge to A1; a
-        // match-5 adds 1 charge to BOTH A1 and A2. Charges cap per ability below.
-        const A1_MAX_CHARGES = 3; // ability 1 holds up to 3 charges
-        const A2_MAX_CHARGES = 2; // ability 2 holds up to 2 charges
-        // Abilities also unlock with the creature's level: A1 at Lv2, A2 at Lv5.
-        const ABILITY_UNLOCK_LV = { 1: 2, 2: 5 };
         function abilityUnlocked(creatureInst, slot) { return !!creatureInst && (creatureInst.level || 1) >= ABILITY_UNLOCK_LV[slot]; }
 
         // ===== SKILL TREE (COIN SHOP) =====
@@ -1158,60 +535,6 @@
         // unlocked once specific minor thresholds are met.
         // Major node purchases still write to gameState.talents so all existing battle hooks keep working.
 
-        // ── Cost design notes (updated) ────────────────────────────────────────
-        // Levels 1-3 stay cheap so new players unlock their first major quickly (same-day feel).
-        // Levels 4-5 are 1.75-2× pricier to stretch mid/end-game timelines to ~5-6 days for
-        // dedicated players (was 4 days) and ~2-3 weeks for casuals (was 14 days).
-        // Three anchor majors (Readiness, Iron Will, Resonance) raised to reflect their power.
-        // Grand total: ~38,500 coins (was 25,750). See economy analysis for full breakdown.
-        const SKILL_TREE_DEFS = [
-            {
-                id: 'offense', name: 'Offense', icon: '⚔️', color: '#e74c3c',
-                minors: [
-                    { id: 'atk_up',        name: 'Battle Strength', icon: '💪', desc: '+3% ATK per level',           maxLevel: 5, costs: [100, 200, 300,  700, 1200] },
-                    { id: 'ability_power', name: 'Ability Power',   icon: '✨', desc: '+4% ability damage per level', maxLevel: 5, costs: [150, 300, 450, 1000, 1500] }
-                ],
-                majors: [
-                    { id: 'momentum',  name: 'Momentum',  icon: '💥', cost: 1200, requires: { atk_up: 3 },                    desc: '+8% damage on all attacks and abilities.' },
-                    { id: 'readiness', name: 'Readiness', icon: '🎯', cost: 2000, requires: { atk_up: 5, ability_power: 3 },   desc: '+6% damage whenever an ability is armed.' }
-                ]
-            },
-            {
-                id: 'defense', name: 'Defense', icon: '🛡️', color: '#3498db',
-                minors: [
-                    { id: 'vitality',  name: 'Vitality',  icon: '❤️', desc: '+5% max HP per level',          maxLevel: 5, costs: [100, 200, 300,  700, 1200] },
-                    { id: 'toughness', name: 'Toughness', icon: '🪨', desc: '+2% damage reduction per level', maxLevel: 5, costs: [150, 300, 450, 1000, 1500] }
-                ],
-                majors: [
-                    { id: 'resilience', name: 'Resilience', icon: '🛡️', cost: 1000, requires: { vitality: 3 },               desc: '+10% max HP for all creatures in battle.' },
-                    { id: 'iron_will',  name: 'Iron Will',  icon: '🔥', cost: 3500, requires: { vitality: 5, toughness: 3 },  desc: 'Each creature survives one fatal hit at 1 HP.' }
-                ]
-            },
-            {
-                id: 'progress', name: 'Progress', icon: '📚', color: '#2ecc71',
-                minors: [
-                    { id: 'training', name: 'Training', icon: '📖', desc: '+5% XP gained per level',          maxLevel: 5, costs: [ 75, 150, 225,  550,  900] },
-                    { id: 'focus',    name: 'Focus',    icon: '🔍', desc: '+0.05× starting combo per level',  maxLevel: 5, costs: [100, 200, 300,  700, 1200] }
-                ],
-                majors: [
-                    { id: 'swift',       name: 'Swift',       icon: '⚡', cost:  800, requires: { focus: 3 },    desc: 'Start each battle with an extra combo boost.' },
-                    { id: 'mentor',      name: 'Mentor',      icon: '📚', cost: 1200, requires: { training: 3 }, desc: '+20% creature XP from every battle.' },
-                    { id: 'persistence', name: 'Persistence', icon: '⏳', cost: 1500, requires: { focus: 5 },   desc: 'Empower and shield effects last one extra turn.' }
-                ]
-            },
-            {
-                id: 'fortune', name: 'Fortune', icon: '🍀', color: '#f1c40f',
-                minors: [
-                    { id: 'prosperity',  name: 'Prosperity',   icon: '✨', desc: '+5% Spirit rewards per level', maxLevel: 5, costs: [ 75, 150, 225,  550,  900] },
-                    { id: 'hunters_eye', name: "Hunter's Eye", icon: '👁️', desc: '+3% catch rate per level',  maxLevel: 5, costs: [100, 200, 300,  700, 1200] }
-                ],
-                majors: [
-                    { id: 'treasure_hunter', name: 'Treasure Hunter', icon: '💰', cost:  800, requires: { prosperity: 3 },                    desc: '+15% Spirit rewards from every battle.' },
-                    { id: 'keen_eye',        name: 'Keen Eye',        icon: '👁️', cost:  500, requires: { hunters_eye: 3 },                   desc: '+15% catch rate on all creatures.' },
-                    { id: 'resonance',       name: 'Resonance',       icon: '🌈', cost: 3000, requires: { prosperity: 5, hunters_eye: 5 },     desc: 'Team synergy bonuses 25% stronger.' }
-                ]
-            }
-        ];
 
         // ── Lookup helpers ──────────────────────────────────────────────────────
         function findMinorDef(id) { for (const t of SKILL_TREE_DEFS) { const m = t.minors.find(m => m.id === id); if (m) return m; } return null; }
@@ -1394,18 +717,7 @@
             render();
         }
 
-        // ===== SUMMON SYSTEM =====
-        const SUMMON_RATES = { legendary: 0.02, epic: 0.13, rare: 0.35, common: 0.50 }; // coin (gold) rates
-        const SUMMON_RATES_GEMS = { legendary: 0.10, epic: 0.40, rare: 0.50, common: 0.00 }; // premium gem rates — no commons
         function summonRatesFor(currency) { return currency === 'gems' ? SUMMON_RATES_GEMS : SUMMON_RATES; }
-        const SUMMON_PITY  = 50;   // guaranteed legendary if not pulled within this many pulls
-        const SUMMON_COSTS = { gems_single: 50, gems_ten: 450, coins_single: 1000 };
-        const SUMMON_POOL  = {
-            common:    [1,  4,  7, 10, 13, 21, 22, 24, 25, 27, 28, 30, 31, 33, 34],
-            rare:      [2,  5,  8, 11, 14, 23, 26, 29, 32, 35],
-            epic:      [3,  6,  9, 12, 15],
-            legendary: [16, 17, 18, 19, 20]
-        };
 
         // Rarity colour used in pull result cards and badges
         function rarityColor(rarity) {
@@ -1463,29 +775,7 @@
             render();
         }
 
-        const CREATURE_MAX_LEVEL = 30;
 
-        // ===== EVOLUTION =====
-        // Evolution is permanent, free, +10% stats per tier, stacks with merge. New sprite per tier.
-        // Creatures can level freely to CREATURE_MAX_LEVEL — there is NO level gate blocking XP gain.
-        // Evolution simply becomes available once a creature reaches the rarity-specific threshold.
-        //   Common:    Evo 1 at Lv10,  Evo 2 at Lv20
-        //   Rare:      Evo 1 at Lv13,  Evo 2 at Lv23
-        //   Epic:      Evo 1 at Lv16,  Evo 2 at Lv26
-        //   Legendary: Evo 1 at Lv20,  Evo 2 at Lv30
-        // Legendaries are deliberately end-game material — reaching full evo2 stats right at the
-        // level cap (30) is intentional, not an oversight.
-        const EVO_GATES = {
-            common:    [10, 20],
-            rare:      [13, 23],
-            epic:      [16, 26],
-            legendary: [20, 30],
-        };
-        const EVO_STAT_MULT = 0.10;                       // +10% to all stats per evolution tier
-        // Phase 8 — evolving now costs element essence of the creature's own element.
-        // Base cost is keyed by RARITY (tier 1); tier 2 costs DOUBLE that same base.
-        // (Existing evolved creatures are grandfathered — cost is only charged at the moment of evolving.)
-        const EVO_ESSENCE_COST = { common: 15, rare: 20, epic: 25, legendary: 30 };
         function evoCostFor(rarity, toTier) {
             const base = EVO_ESSENCE_COST[rarity] || EVO_ESSENCE_COST.common;
             return toTier >= 2 ? base * 2 : base;
@@ -1524,55 +814,6 @@
             return (names && names[evoTier - 1]) || base;
         }
 
-        // XP needed to go from `level` to `level+1`. Hand-tuned lookup table (NOT a formula) —
-        // rebalanced 2026-07-22 to target ~150 same-level battles across the whole 1->30 climb,
-        // rather than solving for a single power-law coefficient/exponent. Designed against the
-        // battle-XP formula used everywhere else in the file (`round(20 + enemyLevel*6)` per
-        // single same-level enemy, scaled by lineup size / boss / mode elsewhere):
-        //   - Level 1->2 is a fast, single-battle onboarding step.
-        //   - Levels 2->3 onward always take at least 2 battles (no more 1-battle levels beyond
-        //     the very first) and climb smoothly through the midgame.
-        //   - The hardest stretch (7 same-level battles/level) is levels 21->28, NOT the very
-        //     last level — it eases back down to 6 battles/level for 28->29 and 29->30 so hitting
-        //     the level cap reads as a small "victory lap," not the single hardest grind in the
-        //     whole curve.
-        //   - Every entry here is an exact multiple of that level's same-level battle-XP value
-        //     (`20 + level*6`), so simulating same-level battles produces EXACTLY the intended
-        //     battle count per level with zero leftover-XP drift into the next level.
-        // Total across the table: 150 battles, 18,690 XP, L1->30. See XP_Per_Level.md.
-        // Index 1 = XP needed to go from level 1 to 2, ... index 29 = level 29 to 30 (the cap).
-        const LEVEL_XP_TABLE = [
-            null,    // index 0 unused (there's no "level 0")
-            26,      //  1 -> 2   (1 battle  @ 26 xp/battle)
-            64,      //  2 -> 3   (2 battles @ 32 xp/battle)
-            76,      //  3 -> 4   (2 battles @ 38 xp/battle)
-            132,     //  4 -> 5   (3 battles @ 44 xp/battle)
-            150,     //  5 -> 6   (3 battles @ 50 xp/battle)
-            224,     //  6 -> 7   (4 battles @ 56 xp/battle)
-            248,     //  7 -> 8   (4 battles @ 62 xp/battle)
-            272,     //  8 -> 9   (4 battles @ 68 xp/battle)
-            370,     //  9 -> 10  (5 battles @ 74 xp/battle)
-            400,     // 10 -> 11  (5 battles @ 80 xp/battle)
-            430,     // 11 -> 12  (5 battles @ 86 xp/battle)
-            460,     // 12 -> 13  (5 battles @ 92 xp/battle)
-            490,     // 13 -> 14  (5 battles @ 98 xp/battle)
-            520,     // 14 -> 15  (5 battles @ 104 xp/battle)
-            660,     // 15 -> 16  (6 battles @ 110 xp/battle)
-            696,     // 16 -> 17  (6 battles @ 116 xp/battle)
-            732,     // 17 -> 18  (6 battles @ 122 xp/battle)
-            768,     // 18 -> 19  (6 battles @ 128 xp/battle)
-            804,     // 19 -> 20  (6 battles @ 134 xp/battle)
-            840,     // 20 -> 21  (6 battles @ 140 xp/battle)
-            1022,    // 21 -> 22  (7 battles @ 146 xp/battle)
-            1064,    // 22 -> 23  (7 battles @ 152 xp/battle)
-            1106,    // 23 -> 24  (7 battles @ 158 xp/battle)
-            1148,    // 24 -> 25  (7 battles @ 164 xp/battle)
-            1190,    // 25 -> 26  (7 battles @ 170 xp/battle)
-            1232,    // 26 -> 27  (7 battles @ 176 xp/battle)
-            1274,    // 27 -> 28  (7 battles @ 182 xp/battle)
-            1128,    // 28 -> 29  (6 battles @ 188 xp/battle) -- taper begins
-            1164     // 29 -> 30  (6 battles @ 194 xp/battle) -- final level, eased pace
-        ];
         function creatureXpNeeded(level) {
             const v = LEVEL_XP_TABLE[level];
             return v != null ? v : 0; // out-of-range (>= cap, or <1) — callers already guard this, 0 is a safe fallback
@@ -1611,29 +852,6 @@
         }
 
 
-        // ===== TEAM SYNERGY =====
-        // Bonuses derived from the whole team's element composition (not just the active creature).
-        // Rewards intentional team-building. Computed once at battle setup -> stored on battle.synergy.
-        //   elementDmgMult[el] : multiplier on OUTGOING damage while a creature of that element leads
-        //   globalDmgMult      : multiplier on ALL outgoing damage (active creature any element)
-        //   damageReduction    : fraction of INCOMING damage prevented (capped)
-        //   list[]             : {icon,name,desc} for UI display
-        const SYN = {
-            // Twin Bond: 2 of one element → 1.15× that element's damage
-            TWIN_DMG: 1.15,
-            // Trinity: all 3 same element → 1.20× that element's damage + element bonus
-            TRINITY_DMG: 1.20,
-            // Balanced Force: all 3 different elements → 1.10× ATK and 1.10× DEF
-            BALANCED_ATK: 1.10,
-            BALANCED_DEF: 1.10,
-            // Trinity element bonuses
-            GRASS_REGEN_PCT:   0.05,   // 5% max HP regen per player turn
-            FIRE_ABILITY_MULT: 1.20,   // 1.20× ability power
-            WATER_DEF_MULT:    1.20,   // 1.20× DEF stat
-            ELECTRIC_REFLECT:  0.10,   // reflect 10% of incoming damage back
-            DARK_LIFESTEAL:    0.15,   // heal 15% of ability damage dealt
-            DR_CAP: 0.50               // hard ceiling on total damage reduction
-        };
         const elementName = el => el ? el.charAt(0).toUpperCase() + el.slice(1) : '';
 
         function computeTeamSynergy(teamIds) {
@@ -2044,173 +1262,8 @@
         }
 
 
-        // ===== LEVEL DATA =====
-        // Enemy level = story level number for regular fights; floor bosses sit at 10 × floor (10, 20, 30).
-        // 10 levels per floor (Grass → Water → Fire). Each level now fields a LINEUP of enemies
-        // (fought in fixed order, no switching). Count rises within & across floors; later floors
-        // mix in off-element enemies so a single team can't counter everything. Boss enemy is last.
-        const levelData = {
-            1: [ // Floor 1: Grass Domain — pure grass, gentle 1→2 count ramp (counter with Fire)
-                { level: 1,  enemies: [{id:7}],                 enemyLevel: 1,  catchableIds: [4, 1],  isBoss: false },
-                { level: 2,  enemies: [{id:8}],                 enemyLevel: 2,  catchableIds: [4, 5],  isBoss: false },
-                { level: 3,  enemies: [{id:7}],                 enemyLevel: 3,  catchableIds: [1, 10], isBoss: false },
-                { level: 4,  enemies: [{id:8}, {id:7}],         enemyLevel: 4,  catchableIds: [5, 10], isBoss: false },
-                { level: 5,  enemies: [{id:9}, {id:7}],         enemyLevel: 5,  catchableIds: [4, 11], isBoss: false },
-                { level: 6,  enemies: [{id:7}, {id:8}],         enemyLevel: 6,  catchableIds: [1, 13], isBoss: false },
-                { level: 7,  enemies: [{id:8}, {id:9}],         enemyLevel: 7,  catchableIds: [5, 11], isBoss: false },
-                { level: 8,  enemies: [{id:9}, {id:8}],         enemyLevel: 8,  catchableIds: [10,13], isBoss: false },
-                { level: 9,  enemies: [{id:8}, {id:9}],         enemyLevel: 9,  catchableIds: [11,14], isBoss: false },
-                { level: 10, enemies: [{id:8}, {id:18}],        enemyLevel: 10, catchableIds: [],      isBoss: true  }  // boss: Sylvara (grass)
-            ],
-            2: [ // Floor 2: Water Domain — water-dominant, occasional off-element (electric/dark) wrinkle
-                { level: 11, enemies: [{id:4}, {id:5}],         enemyLevel: 11, catchableIds: [7, 1],  isBoss: false },
-                { level: 12, enemies: [{id:5}, {id:4}],         enemyLevel: 12, catchableIds: [7, 8],  isBoss: false },
-                { level: 13, enemies: [{id:4}, {id:11}],        enemyLevel: 13, catchableIds: [10, 8], isBoss: false }, // + electric
-                { level: 14, enemies: [{id:5}, {id:6}],         enemyLevel: 14, catchableIds: [11, 8], isBoss: false },
-                { level: 15, enemies: [{id:6}, {id:14}],        enemyLevel: 15, catchableIds: [9, 11], isBoss: false }, // + dark
-                { level: 16, enemies: [{id:4}, {id:5}],         enemyLevel: 16, catchableIds: [7, 13], isBoss: false },
-                { level: 17, enemies: [{id:5}, {id:6}, {id:11}],enemyLevel: 17, catchableIds: [8, 14], isBoss: false }, // + electric
-                { level: 18, enemies: [{id:6}, {id:5}, {id:14}],enemyLevel: 18, catchableIds: [9, 13], isBoss: false }, // + dark
-                { level: 19, enemies: [{id:5}, {id:6}, {id:4}], enemyLevel: 19, catchableIds: [14,11], isBoss: false },
-                { level: 20, enemies: [{id:5}, {id:6}, {id:17}],enemyLevel: 20, catchableIds: [],      isBoss: true  }  // boss: Kraken (water)
-            ],
-            3: [ // Floor 3: Fire Domain — fire-dominant but genuinely mixed; brutal 4-enemy boss
-                { level: 21, enemies: [{id:1}, {id:2}],         enemyLevel: 21, catchableIds: [4, 7],  isBoss: false },
-                { level: 22, enemies: [{id:2}, {id:13}],        enemyLevel: 22, catchableIds: [4, 5],  isBoss: false }, // + dark
-                { level: 23, enemies: [{id:1}, {id:2}, {id:11}],enemyLevel: 23, catchableIds: [5, 10], isBoss: false }, // + electric
-                { level: 24, enemies: [{id:2}, {id:3}, {id:15}],enemyLevel: 24, catchableIds: [6, 11], isBoss: false }, // + dark epic
-                { level: 25, enemies: [{id:3}, {id:2}, {id:1}], enemyLevel: 25, catchableIds: [6, 12], isBoss: false },
-                { level: 26, enemies: [{id:1}, {id:3}, {id:12}],enemyLevel: 26, catchableIds: [5, 13], isBoss: false }, // + electric epic
-                { level: 27, enemies: [{id:2}, {id:3}, {id:14}],enemyLevel: 27, catchableIds: [6, 14], isBoss: false }, // + dark
-                { level: 28, enemies: [{id:3}, {id:2}, {id:11}],enemyLevel: 28, catchableIds: [12,15], isBoss: false }, // + electric
-                { level: 29, enemies: [{id:2}, {id:3}, {id:15}],enemyLevel: 29, catchableIds: [14,15], isBoss: false }, // + dark epic
-                { level: 30, enemies: [{id:2}, {id:3}, {id:15}, {id:16}], enemyLevel: 30, catchableIds: [], isBoss: true } // floor-3 boss: 4 enemies, Pyroclasm (fire) last
-            ],
-            4: [ // Floor 4: Storm Domain — electric-dominant plateau; catch the epics you still lack (non-electric)
-                { level: 31, enemies: [{id:10}, {id:11}],        enemyLevel: 31, catchableIds: [9, 3],   isBoss: false },
-                { level: 32, enemies: [{id:11}, {id:10}],        enemyLevel: 32, catchableIds: [6, 15],  isBoss: false },
-                { level: 33, enemies: [{id:10}, {id:11}, {id:2}],enemyLevel: 33, catchableIds: [3, 6],   isBoss: false }, // + fire rare
-                { level: 34, enemies: [{id:11}, {id:12}],        enemyLevel: 34, catchableIds: [9, 15],  isBoss: false }, // electric epic appears
-                { level: 35, enemies: [{id:12}, {id:11}, {id:14}],enemyLevel: 35,catchableIds: [6, 3],   isBoss: false }, // + dark rare
-                { level: 36, enemies: [{id:10}, {id:11}, {id:12}],enemyLevel: 36,catchableIds: [15, 9],  isBoss: false }, // full electric trio
-                { level: 37, enemies: [{id:11}, {id:12}, {id:3}],enemyLevel: 37, catchableIds: [3, 15],  isBoss: false }, // + fire epic
-                { level: 38, enemies: [{id:12}, {id:11}, {id:15}],enemyLevel: 38,catchableIds: [9, 6],   isBoss: false }, // + dark epic
-                { level: 39, enemies: [{id:12}, {id:11}, {id:10}],enemyLevel: 39,catchableIds: [15, 3],  isBoss: false },
-                { level: 40, enemies: [{id:11}, {id:12}, {id:19}],enemyLevel: 40,catchableIds: [],       isBoss: true  }  // boss: Stormwing (electric)
-            ],
-            5: [ // Floor 5: Void Domain — dark-dominant finale region; catch the last epics (non-dark); brutal 4-enemy finale
-                { level: 41, enemies: [{id:13}, {id:14}],        enemyLevel: 41, catchableIds: [12, 9],  isBoss: false },
-                { level: 42, enemies: [{id:14}, {id:13}],        enemyLevel: 42, catchableIds: [3, 6],   isBoss: false },
-                { level: 43, enemies: [{id:13}, {id:14}, {id:3}],enemyLevel: 43, catchableIds: [9, 12],  isBoss: false }, // + fire epic
-                { level: 44, enemies: [{id:14}, {id:15}],        enemyLevel: 44, catchableIds: [6, 3],   isBoss: false }, // dark epic appears
-                { level: 45, enemies: [{id:15}, {id:14}, {id:12}],enemyLevel: 45,catchableIds: [12, 9],  isBoss: false }, // + electric epic
-                { level: 46, enemies: [{id:13}, {id:14}, {id:15}],enemyLevel: 46,catchableIds: [3, 6],   isBoss: false }, // full dark trio
-                { level: 47, enemies: [{id:14}, {id:15}, {id:6}],enemyLevel: 47, catchableIds: [9, 12],  isBoss: false }, // + water epic
-                { level: 48, enemies: [{id:15}, {id:14}, {id:9}],enemyLevel: 48, catchableIds: [6, 3],   isBoss: false }, // + grass epic
-                { level: 49, enemies: [{id:15}, {id:14}, {id:12}],enemyLevel: 49,catchableIds: [12, 9],  isBoss: false }, // + electric epic
-                { level: 50, enemies: [{id:14}, {id:15}, {id:15}, {id:20}], enemyLevel: 50, catchableIds: [], isBoss: true } // brutal finale: 4, boss Voidlord (dark) last
-            ]
-        };
 
-        // ===== FLOOR / MAP HELPERS =====
-        const floorThemes = {
-            1: { name: 'Grass Domain', grad: 'linear-gradient(170deg,#143319 0%,#2b6b2f 100%)', accent: '#7bed9f', deco: '🌳' },
-            2: { name: 'Water Domain', grad: 'linear-gradient(170deg,#0d2a3a 0%,#14506b 100%)', accent: '#4ecdc4', deco: '🌊' },
-            3: { name: 'Fire Domain',  grad: 'linear-gradient(170deg,#3a1414 0%,#6b2b1a 100%)', accent: '#ff6b6b', deco: '🌋' },
-            4: { name: 'Storm Domain', grad: 'linear-gradient(170deg,#241a48 0%,#4b3a8b 100%)', accent: '#ffd93d', deco: '⛈️' },
-            5: { name: 'Void Domain',  grad: 'linear-gradient(170deg,#160c28 0%,#3a2352 100%)', accent: '#b388ff', deco: '🌌' }
-        };
-        const LEVELS_PER_FLOOR = 10;
-        const MAX_LEVEL = 50; // 5 floors × 10 levels
 
-        // ===== STORY ARC =====
-        // Five floors map to the game's five acts. Each floor has an intro (shown before its
-        // first battle), a boss beat (shown before the floor's boss, level 10/20/30/40/50), and a
-        // clear beat (shown when the boss is beaten and the next floor unlocks). Floor 5's clear
-        // is the story finale. NOTE: floors 3–5 story text is FIRST DRAFT — pending review.
-        const FLOOR_STORY = {
-            1: {
-                act: 'Act I — Formation',
-                intro: [
-                    "You set out with a single name burning in your mind: the trainer who left you behind.",
-                    "Word is they made a fortune off creatures like you — winning, discarding, winning again. The trail leads through the Grass Domain.",
-                    "You're not strong enough to face them yet. But every stray who joins you, every battle you win, brings you one step closer."
-                ],
-                boss: [
-                    "A handler blocks the path out of the Grass Domain — one of your old trainer's hired hands.",
-                    "\"Those rejects? You're wasting your time. Strays don't win.\" Prove them wrong."
-                ],
-                clear: [
-                    "The handler falls. For the first time, someone who works for your old trainer knows your name.",
-                    "Beyond the treeline, water glints. The trail leads on."
-                ]
-            },
-            2: {
-                act: 'Act II — Revenge',
-                intro: [
-                    "The Water Domain is colder, and so are you. Your team is strong now — strong enough to take what you came for.",
-                    "You win battle after battle. Somewhere along the way, you stop noticing when your own creatures get hurt.",
-                    "One of them looks up at you between fights, uncertain. You tell yourself there's no time to stop."
-                ],
-                boss: [
-                    "Your old trainer's lieutenant waits at the water's edge, flanked by exhausted, over-leveled creatures.",
-                    "\"You fight just like them now,\" she says, nodding at your team. \"Are you any different?\" The question stings more than it should."
-                ],
-                clear: [
-                    "You win — but the lieutenant's words follow you out of the Water Domain.",
-                    "One of your oldest companions hangs back as you climb toward the Fire Domain, watching you like it's not sure who you've become."
-                ]
-            },
-            3: {
-                act: 'Act III — Reckoning',
-                intro: [
-                    "The Fire Domain is where your old trainer built their empire. The end of the trail.",
-                    "But the creature that's been with you since the beginning finally stops walking. It won't take another step — not for revenge.",
-                    "You realize you have a choice to make here, and it isn't about who you beat. It's about who you've become."
-                ],
-                boss: [
-                    "Your old trainer stands before you at last — surrounded by a roster of discarded, broken creatures, just like you once were.",
-                    "\"I built something from nothing,\" they say. \"So did you. We're the same.\" This fight will decide whether that's true."
-                ],
-                clear: [
-                    "Your old trainer is beaten — but as they fall, they laugh. \"You think I threw you away? I only followed orders. Same as you follow that grudge.\"",
-                    "They name a place beyond the Fire Domain: a storm-wracked plateau where the ones who really run the discard-pits keep their ledgers. The trail doesn't end here. It climbs."
-                ]
-            },
-            4: {
-                act: 'Act IV — The Ledger',
-                intro: [
-                    "The Storm Domain never stops flickering — a plateau of iron pylons and standing lightning, where discarded creatures were sorted, graded, and sold.",
-                    "This is where the numbers were kept. Where a creature like you was a line in a ledger, crossed out the day you stopped winning.",
-                    "The strays here don't run from you. They've been waiting a long time for someone to walk in the other direction."
-                ],
-                boss: [
-                    "The Storm-Keeper guards the pylons — the one who signed the orders your old trainer only carried out.",
-                    "\"Sentiment,\" they say, watching your team close ranks around you. \"That's the flaw we grade out. Let's see what yours is worth.\""
-                ],
-                clear: [
-                    "The pylons go dark. The ledger burns. Every name that was crossed out is, for a moment, just a name again.",
-                    "But the Storm-Keeper answered to something too — a silence beyond the plateau, where the whole machine was first dreamed up. One climb remains."
-                ]
-            },
-            5: {
-                act: 'Act V — The Architect',
-                intro: [
-                    "The Void Domain is quiet in a way that hurts — no crowds, no pylons, no trainers. Just the cold arithmetic that decided some creatures were worth keeping and the rest were not.",
-                    "The creature that has walked with you since the very first battle presses close. Not a weapon. Not a tool. It chose this climb, same as you.",
-                    "Whatever waits at the top made the rule that made you disposable. You're here to unmake it."
-                ],
-                boss: [
-                    "The Architect waits amid a court of the discarded — creatures broken and rebuilt into something obedient and hollow.",
-                    "\"I didn't invent the cruelty,\" it says. \"I only made it efficient. Beat me and something else takes my place. It always does.\" Prove that it doesn't have to."
-                ],
-                clear: [
-                    "The Architect falls — and you don't cross it out, and you don't gloat. You open the pens, and the hollow court blinks awake, free to be more than a tally.",
-                    "The machine that made you doesn't end with winning. It ends the moment someone refuses to run it. Your team gathers close — not assets, not rejects. Family.",
-                    "The ledgers are ash and the domains are quiet. Somewhere out there, other strays are still waiting for someone to come back for them. Now you can."
-                ]
-            }
-        };
         function floorOfLevel(lvl) { return Math.ceil(lvl / LEVELS_PER_FLOOR); }
         function getLevelConfig(lvl) { const arr = levelData[floorOfLevel(lvl)]; return arr ? arr[(lvl - 1) % LEVELS_PER_FLOOR] : null; }
         function highestFloorReached() { return Math.min(5, floorOfLevel(Math.min(gameState.currentLevel, MAX_LEVEL))); }
@@ -2508,18 +1561,6 @@
             render();
         }
 
-        // ===== DAILY REWARD (7-day cycle) =====
-        // A repeating 7-day login ladder. Day 7 is the celebration: a guaranteed epic creature.
-        // After claiming day 7, the cycle loops back to day 1. Missing a day (gap > 1) resets to day 1.
-        const DAILY_REWARDS = [
-            { day: 1, coins: 200 },
-            { day: 2, gems: 10 },
-            { day: 3, energy: 5 },
-            { day: 4, coins: 400 },
-            { day: 5, gems: 20 },
-            { day: 6, coins: 500, energy: 5 },
-            { day: 7, epic: true, gems: 50 }
-        ];
 
         // Short label + icon for each reward, used by the popup tiles.
         function dailyRewardParts(r) {
@@ -2705,12 +1746,6 @@
             mountOverlay(html);
         }
 
-        // ===== ENERGY SYSTEM =====
-        const ENERGY_MAX         = 20;
-        const ENERGY_REGEN_MS    = 10 * 60 * 1000;  // 1 energy per 10 minutes
-        const ENERGY_PER_BATTLE  = 1;
-        const ENERGY_AD_GRANT    = 5;               // energy from watching an ad
-        const ENERGY_AD_MAX_DAY  = 2;               // max ad refills per day
 
         // Compute live energy without mutating state. Returns { current, nextRegenMs }.
         // nextRegenMs = ms until the next +1 regen (0 if already full).
@@ -2795,26 +1830,6 @@
                     </div>
                 </div>`);
         }
-        // ===== MATCH-3 ENGINE (two-board turn-based duel) =====
-        // Tile animation speeds reduced ~25% (longer durations) so matches read clearly.
-        const SWAP_MS = 173, CLEAR_MS = 240, FALL_MS = 320, AI_DELAY = 650;
-        const ABILITY_CAST_DELAY = 750; // wind-up between tapping an ability and it resolving
-        const DEFEAT_SEQ_MS = 1500;  // "DEFEATED" overlay duration before the defeat popup
-        // ----- Balance tunables (set by balance pass) -----
-        const HP_MULT = 3.5;                       // scales all creature HP
-        const SYN_MULT  = 1.20;  // creature element matches tile element (e.g. fire creature + fire tile)
-                                  // (was 1.25 — lowered 2026-07-27 alongside SE_MULT so the two
-                                  // stack to a clean 1.5x when both apply: own-element AND advantage)
-        const SE_MULT   = 1.25;  // element advantage: attacker's element beats defender's element
-                                  // (was 1.33 — lowered 2026-07-27; 1.20 × 1.25 = 1.5x exactly)
-        const NVE_MULT  = 0.6;   // element resistance: attacker's element is beaten by defender's element
-                                  // (was 0.75 — widened 2026-07-27 so a resisted matchup actually
-                                  // costs something now that power-bar damage itself is smaller;
-                                  // see POWER_TIERS below for the companion change)
-        // Combined SYN + SE (creature element = tile element = beats defender): 1.5 × 1.5 = 2.25
-        // The old DARK_MULT and ELEC_RES special cases are removed — all matchups use the web above.
-        const COMBO_INC = 0.25, COMBO_CAP = 2.5;   // cascade combo growth + ceiling (kept for quest tracking)
-        const POWER_CAP_BASE = 6; // minimum cap (common Lv1, no merges) — used as fallback only
 
         // Power cap for a given creature instance (or enemy object).
         // Formula:
@@ -2855,27 +1870,6 @@
         function effCap(S) {
             return Math.max(1, (S.powerCap || POWER_CAP_BASE) + (S.capMod || 0));
         }
-        // Power-bar damage curve (2026-07-27 rebalance). Previously flat-linear: dmg = ATK × p/3,
-        // so damage scaled purely with how much power you banked, with no diminishing returns —
-        // at high level this compounded with ATK's own growth (both climb with level/merge/evo)
-        // until a single big-cascade release could delete 25-60% of a maxed creature's max HP in
-        // one hit, dwarfing every ability in the game and making which tiles you matched almost
-        // irrelevant. This replaces it with a tiered curve: the baseline (power ≤ 3, i.e. a single
-        // ordinary match-3) is UNCHANGED at 100% ATK, but each tier beyond that needs progressively
-        // more power to unlock the next +100%, so big cascades keep paying off, just at a shrinking
-        // rate instead of a flat one. Breakpoints: 3→100%, 7→200%, 12→300%, 18→400%. Not a
-        // coincidence that 18 is also the highest a power bar can ever reach (16 rarity/level
-        // ceiling + 2 from a maxed ++ merge) — the curve's top tier lines up with the game's actual
-        // power-cap ceiling. Interpolated smoothly between breakpoints (no cliff-edge jump right at
-        // a threshold); extends past 18 with the same slope as the last segment in case any future
-        // effect ever pushes a cap higher.
-        const POWER_TIERS = [
-            { p: 0, mult: 0 },
-            { p: 3, mult: 1.0 },
-            { p: 7, mult: 2.0 },
-            { p: 12, mult: 3.0 },
-            { p: 18, mult: 4.0 },
-        ];
         function powerDamageMult(p) {
             if (p <= 0) return 0;
             const last = POWER_TIERS[POWER_TIERS.length - 1];
@@ -2893,14 +1887,10 @@
             }
             return last.mult;
         }
-        const BOSS_HP_MULT = 1.3;                  // bosses get extra HP on top
-        const ELEMENT_POOL = ['fire', 'water', 'grass', 'electric', 'dark'];
-        const elementColors = { fire: '#ff6b6b', water: '#4ecdc4', grass: '#7bed9f', electric: '#ffd93d', dark: '#9b8bd6' };
         function hexToRgb(hex) {
             const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
             return m ? `${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)}` : '255,255,255';
         }
-        const tileEmoji = { fire: '🔥', water: '💧', grass: '🌿', electric: '⚡', dark: '🌑' };
 
         // ===== Custom element icons ====================================
         // One PNG per element, loaded from the sibling `elements/` folder.
@@ -5149,13 +4139,6 @@
             return Math.max(1, Math.min(len, charges)) - 1;
         }
 
-        // ── Ability loadout model ───────────────────────────────────────────
-        // Each creature has up to 3 A1 and 3 A2 abilities, unlocked by evolution tier:
-        //   row/tier 0 → 'evo0'   row/tier 1 → 'evo1'   row/tier 2 → 'evo2'
-        // The player equips exactly ONE A1 and ONE A2 from whatever's unlocked.
-        // creature.equippedA1 / creature.equippedA2 store the chosen slot key ('evo0'..).
-        // Defaults to 'evo0' (the starting abilities) when unset.
-        const SLOT_TIER = { evo0: 0, evo1: 1, evo2: 2 };
 
         // The raw A1 spec object for a given slot key (or null if that creature lacks it).
         function a1SpecForSlot(baseId, slot) {
@@ -9381,23 +8364,6 @@
             return Math.max(0, Math.min(2, tier));
         }
 
-        // The actual battle setup, called once any pre-battle story beat has been shown.
-        // ===================================================================
-        // ENDLESS EXPEDITION — Phase 1 (core loop) + Phase 2 (reward draft + press-your-luck)
-        //                    + Phase 3 (milestones + hub) + Phase 4 (catch system)
-        //                    + Phase 5c (elemental aura)
-        // Currency is five per-element essence wallets (gameState.endless.essence); the old single
-        // Proofs currency was retired (legacy balances migrate to essence on load).
-        // Elemental aura is a Bond 3 reward (not a standalone shop item).
-        // Skins (Shiny, Crystal, Celestial) are stubbed in the creature profile — not yet built.
-        //
-        // FUTURE TASKS (flagged for next sessions):
-        //   • Review current attack VFX
-        //   • Review bonding attack VFX
-        //   • Phase 5b: creature color variants (blocked on sprite-art pipeline decision)
-        //   • Phase 5 skin system: Shiny / Crystal / Celestial (stubs in renderCreatureProfile)
-        // ===================================================================
-        const ENDLESS_REGEN = 0.15; // fraction of max HP recovered per cleared floor
 
 
         function runAscension() {
@@ -9452,10 +8418,6 @@
         // cadence (essence rewards carry the "was it worth it" load since there's no XP).
 
 
-        // Phase 5c — per-creature elemental particle aura (an essence cosmetic). Drawn on the canvas
-        // over the sprite, so it works on procedural AND custom-PNG creatures (no art dependency).
-        // Designed to grow: auraFx is an effect id, not a boolean, so more effects can be added.
-        const ELEMENTAL_AURA_COST = 15; // one-time essence cost (of the creature's element); toggling is then free
         const AURA_LABEL = { fire: '🔥 Embers', water: '❄️ Snowfall', grass: '🍃 Leaves', electric: '⚡ Sparks', dark: '🌫️ Dark Smoke' };
 
         function buyCreatureAura(creatureId) {
@@ -9529,16 +8491,6 @@
             ctx.restore();
         }
 
-        // ── Phase 8 — Element Essences ─────────────────────────────────────────
-        // Five per-element currencies earned by KO'ing enemies of that element during an
-        // Explore run. Banked on cash-out, lost on wipe (mirrors the pot). Account-wide
-        // purchases (cosmetics) cost an equal amount of ALL five; creature-specific purchases
-        // (auras/skins) cost that creature's single element 1:1.
-        const ESS_ELEMENTS = ['fire', 'water', 'grass', 'electric', 'dark'];
-        const ESSENCE_ICON = '◈'; // generic essence glyph; per-element uses tileEmoji
-        // Essence granted for DEFEATING (not gathering) a wild creature — of that creature's
-        // element, scaled by the creature's rarity.
-        const DEFEAT_ESSENCE = { common: 2, rare: 4, epic: 6, legendary: 8 };
         function emptyEssence() { return { fire: 0, water: 0, grass: 0, electric: 0, dark: 0 }; }
         function essenceWallet() { ensureEndlessState(); return gameState.endless.essence; }
         // Distribute `total` essence as evenly as possible across the five wallets.
@@ -9617,14 +8569,6 @@
         // Award any milestone whose floor is now <= bestFloor and isn't yet claimed.
 
 
-        // Depth → difficulty. Stats come from enemyLevel + evoTier (not species), so
-        // species can be random; difficulty scales purely with depth.
-        // Pick an enemy species weighted by rarity and depth. Early floors are common/rare only;
-        // epics appear mid; legendaries only deep. Fixes the "floor 1 = legendary" spikes, since
-        // legendary base stats are a large share of total stats when enemyLevel is tiny.
-        // Fraction of Explore enemies whose element matches the node's biome (rest stay random
-        // for variety). A seam node biases toward either of its two elements.
-        const ENDLESS_BIOME_BIAS = 0.75;
 
         // Lineup size for a given depth (used by node previews to show the enemy count without
         // rolling actual enemies).
@@ -9642,34 +8586,7 @@
 
 
 
-        // ═══════════════════════════════════════════════════════════════════════
-        // EXPLORE (gather mode) — fixed-length LINEAR runs. Pick a length + an
-        // element "land", then fight N single-creature battles; catch or KO each,
-        // and finish the run to bank that element's essence. Deeper battles and a
-        // higher Ascension raise the rarity odds. Reuses the endless battle
-        // machinery (mode:'endless', run.hp carry, beginEndlessNode, and the
-        // win/lose hooks) so the fragile battle loop is untouched — every
-        // explore-specific behavior branches off run.explore. The old branching
-        // wheel (endlessHub / endlessMap) is left intact but no longer entered.
-        // ═══════════════════════════════════════════════════════════════════════
-        const EXPLORE_LENGTHS = {
-            stroll:     { label: 'Stroll',     energy: 1,  battles: 1,  essence: 0  },
-            trek:       { label: 'Trek',       energy: 3,  battles: 4,  essence: 5  },
-            quest:      { label: 'Quest',      energy: 5,  battles: 7,  essence: 10 },
-            expedition: { label: 'Voyage',     energy: 7,  battles: 10, essence: 15 },
-        };
-        const EXPLORE_LENGTH_ORDER = ['stroll', 'trek', 'quest', 'expedition'];
 
-        // ═══════════════════════════════════════════════════════════════════════
-        // TRAIN mode — a one-off "sparring" battle vs 3 auto-generated creatures of
-        // any element (simulating a PvP team). A slider sets the enemy level, which
-        // also drives rarity: ≤10 all common, then rares/epics/legendaries unlock as
-        // the level climbs. The point of the mode is XP: it pays 1.5× a normal fight
-        // and grants NO essence/catches. Reuses the shared battle machinery (the
-        // generic multi-enemy lineup advance handles the 3-creature team).
-        // ═══════════════════════════════════════════════════════════════════════
-        const TRAIN_MAX_LEVEL = CREATURE_MAX_LEVEL;   // 30
-        const TRAIN_XP_MULT = 1.5;
 
         // Rarity odds by enemy level. ≤10 = all common; rares open above 10, epics
         // above 20, legendaries above 30 — each scaling in with level. (Starting
@@ -9694,62 +8611,10 @@
             return out;
         }
 
-        // ═══════════════════════════════════════════════════════════════════════
-        // TRAIN SQUAD CHALLENGES — a themed 6-tier gauntlet per element, layered on
-        // Train's own battle machinery. The free-form level slider above stays exactly
-        // as it is, purely for XP grinding — nothing there is reward-gated, so there's
-        // nothing to game. Squad Challenges are the opposite: opponent level is FIXED
-        // per tier (not player-chosen), tiers unlock strictly in order (tier N needs
-        // tier N-1 already cleared), and each tier grants its reward exactly once ever.
-        // That's what makes the reward safe to hand out — there's no "set it to level 1"
-        // shortcut, because the level was never a dial to begin with.
-        // ═══════════════════════════════════════════════════════════════════════
-        const TRAIN_SQUADS = {
-            fire:     { name: 'The Blaze Brigade', icon: '🔥' },
-            water:    { name: 'Tide Force',        icon: '💧' },
-            grass:    { name: 'The Leaf Legion',   icon: '🌿' },
-            electric: { name: 'Shock Troop',       icon: '⚡' },
-            dark:     { name: 'The Night Crew',    icon: '🌑' },
-        };
-        const TRAIN_SQUAD_ORDER = ['fire', 'water', 'grass', 'electric', 'dark'];
-        // Same 5 ids as the story-clear legendary pool (LEGENDARY_IDS), just addressed by
-        // element instead of randomly picked — clearing a squad's tier 6 always grants
-        // THAT element's own legendary, never a random one.
-        const TRAIN_SQUAD_LEGENDARY = { fire: 16, water: 17, grass: 18, electric: 19, dark: 20 };
 
-        const TRAIN_CHALLENGE_LEVELS = [5, 10, 15, 20, 25, 30];
 
-        // Every modifier is a fight-LONG standing effect, not a one-shot buff — applied when
-        // a challenge battle starts AND re-applied every time the squad's lineup advances to
-        // its next member (see the enemy-advance chokepoint in the battle loop), so it holds
-        // for the whole fight regardless of which of the squad's 3 creatures is currently up.
-        const TRAIN_MODIFIERS = {
-            regen:     { name: 'Regenerating', icon: '💚', desc: 'Enemies heal 5% max HP at the end of every one of their turns.' },
-            lockedIn:  { name: 'Locked In',    icon: '🔒', desc: "You can't switch your active creature during this fight." },
-            chargedUp: { name: 'Charged Up',   icon: '⚡', desc: 'Enemies start — and stay — with A1 and A2 fully pre-charged.' },
-            fortified: { name: 'Fortified',    icon: '🛡️', desc: 'Every enemy starts with a shield blocking 50% of the first hit it takes.' },
-            enraged:   { name: 'Enraged',      icon: '😡', desc: 'Enemies deal +15% damage for the whole fight.' },
-        };
-        const TRAIN_MODIFIER_ORDER = ['regen', 'lockedIn', 'chargedUp', 'fortified', 'enraged'];
-        const TRAIN_MODIFIER_REGEN_PCT = 0.05;
-        const TRAIN_MODIFIER_FORTIFIED_FRAC = 0.5;
-        const TRAIN_MODIFIER_ENRAGED_MULT = 1.15;
 
-        // Minimum modifiers the PLAYER must have toggled on to even start each tier (any of
-        // the 5 — their choice which). Scales 0..5 across the 6 tiers, so tier 6 (the
-        // legendary-granting fight) demands every modifier stacked at once.
-        const TRAIN_CHALLENGE_REQUIRED_MODS = [0, 1, 2, 3, 4, 5];
 
-        // Reward per tier index (0-5). Tier 5 (level 30) additionally grants the squad's
-        // legendary on top of its essence/gems.
-        const TRAIN_CHALLENGE_REWARDS = [
-            { essence: 5,  gems: 0 },
-            { essence: 10, gems: 1 },
-            { essence: 15, gems: 2 },
-            { essence: 20, gems: 2 },
-            { essence: 25, gems: 3 },
-            { essence: 30, gems: 5, legendary: true },
-        ];
 
         function ensureTrainChallenges() {
             if (!gameState.trainChallenges) gameState.trainChallenges = {};
@@ -9840,37 +8705,6 @@
             render();
         }
 
-        // ═══════════════════════════════════════════════════════════════════════
-        // LADDER mode — ranked matchmaking sparring, layered on the same battle
-        // machinery as Train. Rank is a SINGLE ACCOUNT-WIDE score (not per-team) —
-        // matchmaking, tiers, and creature unlocks all read gameState.ladderRank.
-        // A "ranked team" (exact set of creature INSTANCE ids) still gets tracked
-        // in gameState.ladderHistory, but purely as a personal record: wins/losses
-        // and the highest the ACCOUNT score ever reached while fielding that team.
-        // Swapping any member starts a fresh history entry; it does not reset your
-        // rank, which belongs to the account, not the team.
-        //
-        // Opponent level is NOT player-chosen — it's derived from the account's
-        // current points via ladderMatchLevel(), so points can't be farmed by
-        // repeatedly picking an easy fight (Free Spar / Train remains for that).
-        // Points earned/lost per match scale with the matched level, so rank
-        // naturally plateaus once fights get hard enough to start costing more
-        // than they pay — that plateau IS your rank.
-        //
-        // Every 100 points is a new "Rank" (Bronze..Grand Master, then Grand Master
-        // keeps climbing numerically once everything's unlocked). Every 25 points is
-        // a claimed milestone reward — a repeating essence/gems/spirit/creature
-        // cycle, similar to Clash Royale's arena road.
-        // ═══════════════════════════════════════════════════════════════════════
-        const LADDER_TIERS = [
-            { name: 'Bronze',      floor: 0,   icon: '🥉', color: '#a9704f' },
-            { name: 'Silver',      floor: 100, icon: '🥈', color: '#b9c2cc' },
-            { name: 'Gold',        floor: 200, icon: '🥇', color: '#e6c04a' },
-            { name: 'Platinum',    floor: 300, icon: '💠', color: '#6fd0d8' },
-            { name: 'Diamond',     floor: 400, icon: '🔷', color: '#7fa8ff' },
-            { name: 'Master',      floor: 500, icon: '👑', color: '#e85fd0' },
-            { name: 'Grand Master',floor: 600, icon: '🌟', color: '#ffd24d' },  // open-ended: stays "Grand Master" forever past here
-        ];
 
         function ladderTierIndex(points) {
             let idx = 0;
@@ -9946,8 +8780,6 @@
             rec.lastPlayed = Date.now();
         }
 
-        // ── Milestone rewards: every 25 points, claimed once, repeating 4-step cycle ──
-        const LADDER_MILESTONE_STEP = 25;
 
         // What species unlock exactly upon reaching a given 1-based rank number, or []
         // if that rank introduces nothing new (every rank from 8 on, once Grand Master's
@@ -10041,14 +8873,6 @@
             };
         }
 
-        // ── Ladder-gated creature unlocks (Clash-Royale-style progression) ─────
-        // Each element has 7 species in a fixed rarity order (from the `code` field:
-        // C1,C2,C3,R1,R2,E1,L1). LADDER_UNLOCK_SLOTS[tierIndex] = how many of those
-        // 7 per-element slots are unlocked once the ACCOUNT has ever reached that
-        // tier at its peak (permanent — falling back down doesn't re-lock anything).
-        // A fresh account with zero ladder history is treated as Bronze, so it
-        // always starts with 5 species (1 per element).
-        const LADDER_UNLOCK_SLOTS = [1, 2, 3, 4, 5, 6, 7]; // Bronze..Grand Master, indices into LADDER_TIERS
 
         // Parse a creature's code (e.g. 'FC2', 'WR1', 'DL1') into its 0-based slot
         // index within its element's 7-species order: C1..C3 → 0-2, R1..R2 → 3-4,
@@ -10086,12 +8910,6 @@
             return LADDER_TIERS[LADDER_TIERS.length - 1];
         }
 
-        // If the rolled rarity has NOTHING unlocked yet anywhere (e.g. legendary before
-        // Grand Master), step down toward common until we hit a rarity that does. This is what
-        // keeps a high enemy level from ever forcing a locked species into an encounter —
-        // it degrades the RARITY, it never bypasses the lock. Bronze always has 5 unlocked
-        // commons, so this is guaranteed to resolve.
-        const RARITY_DEGRADE_ORDER = ['legendary', 'epic', 'rare', 'common'];
         function rarityDegradedToUnlocked(rarity) {
             const start = RARITY_DEGRADE_ORDER.indexOf(rarity);
             for (let i = Math.max(0, start); i < RARITY_DEGRADE_ORDER.length; i++) {
@@ -10264,15 +9082,7 @@
             render();
         }
 
-        // Highest Ascension that has a defined rarity table. Unlocks stop here
-        // until more tables are added below. Beating Quest (or longer) at your
-        // current-max Ascension unlocks the next, capped at this.
-        const EXPLORE_ASC_MAX_DEFINED = 4;
 
-        // On a wipe the completion essence bonus is forfeited (you only earn it by
-        // FINISHING), but creatures caught mid-run are secured on catch and kept.
-        // Flip to false to make a wipe also delete this run's catches.
-        const EXPLORE_WIPE_KEEPS_CATCHES = true;
 
         // Ascension → base enemy level for battle 1 (each battle then adds +2).
         // asc1=1, asc2=10, asc3=20, asc4=30 — asc4 lands exactly on CREATURE_MAX_LEVEL, so its
@@ -10281,26 +9091,6 @@
         // flat combat bonuses (+10% stats, +2 power cap, pre-charged abilities) — see there.
         function exploreStartLevel(asc) { return asc <= 1 ? 1 : (asc - 1) * 10; }   // asc1=1, asc2=10, asc3=20, asc4=30
 
-        // Rarity odds by Ascension (1-based) and battle band (battles 1-5 / 6-10 / 11-15).
-        const EXPLORE_RARITY = {
-            1: [ { common: 100 },
-                 { common: 95, rare: 5 },
-                 { common: 90, rare: 10 } ],
-            2: [ { common: 95, rare: 5 },
-                 { common: 88, rare: 10, epic: 2 },
-                 { common: 75, rare: 20, epic: 5 } ],
-            3: [ { common: 80, rare: 18, epic: 2 },
-                 { common: 60, rare: 30, epic: 10 },
-                 { common: 40, rare: 35, epic: 20, legendary: 5 } ],
-            4: [ { common: 60, rare: 28, epic: 12 },
-                 { common: 35, rare: 35, epic: 25, legendary: 5 },
-                 { common: 15, rare: 30, epic: 40, legendary: 15 } ],
-        };
-        // Ascension 4 enemies are always at the level cap (see exploreStartLevel/exploreMapNode),
-        // so their extra bite comes from flat combat bonuses instead of more level headroom.
-        const EXPLORE_ASC4_STAT_MULT = 1.10;       // +10% HP/ATK/DEF, applied in getCreatureStats via inst.ascBonusMult
-        const EXPLORE_ASC4_POWER_CAP_BONUS = 2;    // +2 power-bar cap, on top of the normal rarity/level/merge cap
-        const EXPLORE_ASC4_PRECHARGE = 1;          // enemy starts battle with this many A1 AND A2 charges banked
         function exploreAsc4Active(run) { return !!(run && (run.ascension || 0) >= 4); }
         function exploreBand(battleIdx) { return battleIdx <= 5 ? 0 : battleIdx <= 10 ? 1 : 2; }
         // Full 4-key odds object (missing tiers filled with 0) for a given asc + battle.
@@ -12375,8 +11165,6 @@
             exploreBattleCleared();   // every run is an Explore (gather) run now
         }
 
-        // Explore post-battle HP helper.
-        const STAT_PIP_MAX = 5;
 
         function endlessCreatureMaxHp(id) {
             const c = gameState.creatures.find(x => x.id === id);
@@ -12411,10 +11199,6 @@
         }
 
 
-        // New Game+ raises every story enemy's level by +20 per completed NG+ tier, so a
-        // finished roster has a reason to re-run the 30 levels. Bosses/evo scaling stack on top.
-        const NGPLUS_LEVEL_BONUS = 20;
-        const LEGENDARY_IDS = [16, 17, 18, 19, 20];
         function ngPlusLevel() { return gameState.ngPlus || 0; }
         function ngPlusEnemyLevel(baseLevel) { return baseLevel + NGPLUS_LEVEL_BONUS * ngPlusLevel(); }
 
@@ -12616,12 +11400,6 @@
             return ({ S: '#f1c40f', A: '#2ecc71', B: '#3498db', C: '#aaa', D: '#888', E: '#e67e22', F: '#e74c3c' })[rank] || '#aaa';
         }
 
-        // Spend gems to re-roll a creature's individual stat variation (and therefore its rank).
-        // Pure random each time — it can go down as well as up. Because a bad roll could wipe out
-        // good stats, the result is PREVIEWED first: the player pays to roll, sees current vs. new,
-        // then chooses to Apply or Keep Current.
-        const RANK_REROLL_COST = 50; // gems
-        const RANK_ORDER = ['F', 'E', 'D', 'C', 'B', 'A', 'S']; // low → high
         let _pendingReroll = null;   // { creatureId, roll } awaiting the player's choice
 
         // Compute stats as if the creature had a given roll, without mutating it.
@@ -12726,19 +11504,6 @@
             showToast('Kept current stats');
         }
 
-        // ===== BONDING =====
-        // A per-creature relationship track funded by Spirit. Cosmetic only — it upgrades that
-        // creature's attack visuals, never its stats. Unlocks once the creature reaches Lv15.
-        const BOND_MAX = 5;
-        const BOND_UNLOCK_LV = 9;   // was 15 under the old 50-level cap (30% of cap) — rescaled to the same 30% of the new 30-level cap
-        const BOND_COSTS = [2000, 4000, 7000, 11000, 16000]; // Spirit to raise to tier i+1
-        const BOND_TIERS = [
-            { name: 'Kindred',   blurb: 'Fuller, denser attack effects and a brighter presence.' },
-            { name: 'Trusted',   blurb: 'Every signature attack now ends in a burst of energy.' },
-            { name: 'Devoted',   blurb: 'A pulsing aura and longer-lasting strikes.' },
-            { name: 'Soulbound', blurb: 'Wider, heavier strikes with more impact behind them.' },
-            { name: 'Mastered',  blurb: 'A gold-touched flourish worthy of a true partner.' }
-        ];
         function bondLevelOf(c)  { return Math.max(0, Math.min(BOND_MAX, c.bondLevel || 0)); }
         function bondUnlocked(c) { return (c.level || 1) >= BOND_UNLOCK_LV; }
         function nextBondCost(c)  { const lv = bondLevelOf(c); return lv >= BOND_MAX ? null : BOND_COSTS[lv]; }
@@ -12892,18 +11657,7 @@
             }
             return creature;
         }
-        const FIRST_CATCH_GEM_BONUS = 5;
 
-        // Catch chance after defeating a creature, by rarity
-        // Gather rates by rarity and enemy HP remaining (as fraction of max).
-        // 0% at full HP — player must land at least one hit before gathering.
-        // hpFrac thresholds: =1.0 (full) | >0.75 | >0.40 | >0.15 | ≤0.15
-        const GATHER_RATES = {
-            common:    [0.00, 0.15, 0.45, 0.80, 0.95],
-            rare:      [0.00, 0.08, 0.25, 0.55, 0.80],
-            epic:      [0.00, 0.03, 0.12, 0.30, 0.55],
-            legendary: [0.00, 0.01, 0.05, 0.12, 0.25]
-        };
 
         // Returns the base gather probability (0–1) for a given baseId + current enemy HP fraction.
         function gatherRate(baseId, hpFrac) {
@@ -12929,8 +11683,6 @@
         }
 
 
-        // ===== TUTORIAL BATTLES (Floor 0) =====
-        const TUTORIAL_ENEMY_COMMON = { fire: 1, water: 4, grass: 7, electric: 10, dark: 13 }; // element -> a weak common creature
 
         // Battle configs. Battle 1 picks an enemy the player's starter holds the
         // advantage over, so the first fight is a confidence-building win.
@@ -13463,15 +12215,7 @@
             return `⚠️ You're at an element disadvantage. Switch to a creature whose element is strong against ${cap(enemyEl)}.`;
         }
 
-        const MAX_MERGE = 2; // base -> + -> ++ (final form)
 
-        // Merge is an accumulating "feed" bar. You feed same-series creatures (any form) into a
-        // keeper; each fed creature is +1 progress. When progress reaches the rarity threshold for
-        // the next tier, the keeper advances a merge level (keeping its level/XP) and leftover
-        // progress carries over.
-        //   requirement for the NEXT tier = MERGE_REQ[rarity] * (mergeLevel + 1)
-        //   base→+  : MERGE_REQ × 1     +→++ : MERGE_REQ × 2
-        const MERGE_REQ = { common: 10, rare: 7, epic: 5, legendary: 2 };
 
         function formName(baseId, mergeLevel, evoTier) {
             return evolvedName(baseId, evoTier || 0) + '+'.repeat(mergeLevel);
@@ -15725,7 +14469,6 @@
         // Gems  : awarded only on first-ever clear of a boss (permanent, never resets)
         // Coins + XP : full on first clear today, 50% on second, 25% on third+; resets at midnight
 
-        const BOSS_FARM_MULT = [1.0, 0.5, 0.25]; // index = clears already done today (capped at last)
 
         function getBossReplayMult(levelNum) {
             if (!gameState.currentBattle || !gameState.currentBattle.isBoss) return 1;
@@ -15753,33 +14496,8 @@
             gameState.bossFirstClears[levelNum] = true;
         }
 
-        // ===== QUEST SYSTEM =====
-        const ELEMENTS = ['fire','water','grass','electric','dark'];
 
-        const QUEST_POOL_DAILY = [
-            { id:'win_streak',     label:'Win 3 battles in a row',               goal:3,  reward:{coins:300} },
-            { id:'damage_500',     label:'Deal 500+ damage in one battle',        goal:1,  reward:{coins:200} },
-            { id:'no_faint',       label:'Win without any creature fainting',     goal:1,  reward:{coins:250} },
-            { id:'ability_x5',     label:'Use abilities 5 times',                 goal:5,  reward:{coins:150} },
-            { id:'cascade_triple', label:'Trigger a triple cascade',              goal:1,  reward:{coins:200} },
-            { id:'mono_team',      label:'Win with a same-element team',          goal:1,  reward:{coins:300} },
-            { id:'catch_element',  label:'Catch 3 creatures',                     goal:3,  reward:{coins:250} },
-            { id:'solo_creature',  label:'Win using only one creature',           goal:1,  reward:{coins:350} },
-            { id:'win_5',          label:'Win 5 battles',                         goal:5,  reward:{coins:200} },
-            { id:'boss_win',       label:'Defeat a boss',                         goal:1,  reward:{coins:400} },
-            { id:'level_up',       label:'Level up a creature',                   goal:1,  reward:{coins:100} },
-            { id:'all_hit',        label:'Have every party member attack and win',goal:1,  reward:{coins:350} },
-            { id:'combo_2',        label:'Achieve a 2.0× combo multiplier',      goal:1,  reward:{coins:200} },
-            { id:'under_3_turns',  label:'Defeat an enemy in 3 turns or fewer',  goal:1,  reward:{coins:300} },
-        ];
 
-        const QUEST_POOL_WEEKLY = [
-            { id:'weekly_wins',        label:'Win 20 battles this week',               goal:20, reward:{gems:15} },
-            { id:'catch_all_elements', label:'Catch one of every element this week',   goal:5,  reward:{gems:20} },
-            { id:'all_bosses',         label:'Beat all 3 floor bosses this week',      goal:3,  reward:{gems:25} },
-            { id:'evolve_one',         label:'Evolve a creature',                      goal:1,  reward:{gems:20} },
-            { id:'synergy_wins',       label:'Win 5 battles with active team synergy', goal:5,  reward:{gems:15} },
-        ];
 
         function questWeekKey() {
             const d = new Date(), jan1 = new Date(d.getFullYear(), 0, 1);
@@ -16080,12 +14798,6 @@
             render();
         }
 
-        // Adds XP to each creature in ids, leveling them up. Returns names that leveled up.
-        // Level-relative XP multiplier. diff = enemyLevel - creatureLevel.
-        //   same level         → 1.00 (100%)
-        //   enemy higher        → bonus, +20% per level, capped at 2.00 (200%)
-        //   creature higher     → penalty, −20% per level, floored at 0.10 (10%)
-        const XP_GAP_SLOPE = 0.20, XP_GAP_FLOOR = 0.10, XP_GAP_CAP = 2.00;
         function xpGapMultiplier(creatureLevel, enemyLevel) {
             const diff = (enemyLevel || creatureLevel) - creatureLevel;
             const mult = 1 + diff * XP_GAP_SLOPE;
@@ -16205,8 +14917,6 @@
             setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 1700);
         }
 
-        // ===== Team formations (saved loadouts, like deck slots) =================
-        const FORMATION_COUNT = 3;
         function ensureFormations() {
             if (!Array.isArray(gameState.formations) || gameState.formations.length < FORMATION_COUNT) {
                 const cur = (gameState.team || [null, null, null]).slice(0, 3);
@@ -18440,4 +17150,5 @@
     </script>
 </body>
 </html>
+
 
