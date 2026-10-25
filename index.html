@@ -1407,12 +1407,12 @@
             if (gameState.dailyCycleDay === undefined) gameState.dailyCycleDay = 0;
             if (gameState.dailyLastClaimDate === undefined) gameState.dailyLastClaimDate = null;
             (gameState.creatures || []).forEach(c => { if (c.mergeProgress === undefined) c.mergeProgress = 0; });
-            // Players who already picked a starter before the tutorial shipped — or testers
-            // who already progressed past onboarding — should never be dropped into it.
+            // Phase 0 with an existing starter identifies pre-tutorial saves. Story
+            // progress also identifies established players. A larger roster does NOT:
+            // tutorial victories intentionally recruit allies before onboarding ends.
             if (gameState.selectedStarterElement && !gameState.tutorial.isComplete) {
                 if (gameState.tutorial.currentPhase === 0 ||
-                    gameState.currentLevel > 1 ||
-                    (gameState.creatures || []).length > 1) {
+                    gameState.currentLevel > 1) {
                     gameState.tutorial.isComplete = true;
                 }
             }
@@ -9810,7 +9810,7 @@
                 const barColor = fainted ? '#555' : pct < 35 ? '#e74c3c' : pct < 70 ? '#e6a817' : '#2ecc71';
                 return `<div style="display:flex; align-items:center; gap:8px; padding:8px 6px; border-bottom:1px solid #111; opacity:${fainted ? '0.5' : '1'};">` +
                     `<div style="flex-shrink:0;">${spriteImg(c.baseId, 32, '', evoTierOf(c))}</div>` +
-                    `<div style="flex:1; min-width:0;"><div style="font-size:12px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${displayName(c)}</div><div style="font-size:11px; color:#666; margin-top:1px;">Lv ${c.level}</div></div>` +
+                    `<div style="flex:1; min-width:0;"><div style="font-size:12px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(displayName(c))}</div><div style="font-size:11px; color:#666; margin-top:1px;">Lv ${c.level}</div></div>` +
                     `<div style="text-align:right; flex-shrink:0;">` +
                     (fainted
                         ? `<span style="font-size:11px; color:#666;">Fainted</span>`
@@ -10031,7 +10031,7 @@
                         `<div style="flex-shrink:0; position:relative;">${spriteImg(c.baseId, 32, '', evoTierOf(c))}` +
                             (lvlUp ? `<span style="position:absolute; left:-2px; top:-4px; font-size:11px;">✨</span>` : '') +
                         `</div>` +
-                        `<div style="flex:1; min-width:0;"><div style="font-size:12px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${name}</div><div style="font-size:11px; color:#666; margin-top:1px;">Lv ${c.level}${c.level >= cap ? ' (max)' : ''}</div></div>` +
+                        `<div style="flex:1; min-width:0;"><div style="font-size:12px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(name)}</div><div style="font-size:11px; color:#666; margin-top:1px;">Lv ${c.level}${c.level >= cap ? ' (max)' : ''}</div></div>` +
                         `<div style="text-align:right; flex-shrink:0;">` +
                         (fainted
                             ? `<span style="font-size:11px; color:#666;">Fainted</span>`
@@ -10479,7 +10479,7 @@
                 const xpNeeded = atCap ? 0 : creatureXpNeeded(c.level);
                 return `<div class="${lvlUp ? 'lvlup-row' : ''}" style="display:flex; align-items:center; gap:8px; padding:8px 6px; border-bottom:1px solid #111;">` +
                     `<div style="flex-shrink:0; position:relative;">${spriteImg(c.baseId, 32, '', evoTierOf(c))}${lvlUp ? '<span class="lvlup-sparkle" style="left:-2px; top:-4px;">✨</span>' : ''}</div>` +
-                    `<div style="flex:1; min-width:0;"><div style="font-size:12px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${name}</div><div style="font-size:11px; color:#666; margin-top:1px;">Lv ${c.level}${atCap ? ' (max)' : ''}</div></div>` +
+                    `<div style="flex:1; min-width:0;"><div style="font-size:12px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(name)}</div><div style="font-size:11px; color:#666; margin-top:1px;">Lv ${c.level}${atCap ? ' (max)' : ''}</div></div>` +
                     `<div style="text-align:right; flex-shrink:0;">` +
                         `<div style="font-size:12px; color:#7fd0ff; font-weight:800; margin-bottom:2px;">+${b.amount} XP</div>` +
                         xpBarSplitHtml(b.prevLevel, b.prevXp, c.level, c.xp || 0, xpNeeded) +
@@ -10599,7 +10599,7 @@
                 const xpNeeded = atCap ? 0 : creatureXpNeeded(c.level);
                 return `<div class="${lvlUp ? 'lvlup-row' : ''}" style="display:flex; align-items:center; gap:8px; padding:8px 6px; border-bottom:1px solid #111;">` +
                     `<div style="flex-shrink:0; position:relative;">${spriteImg(c.baseId, 32, '', evoTierOf(c))}${lvlUp ? '<span class="lvlup-sparkle" style="left:-2px; top:-4px;">✨</span>' : ''}</div>` +
-                    `<div style="flex:1; min-width:0;"><div style="font-size:12px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${name}</div><div style="font-size:11px; color:#666; margin-top:1px;">Lv ${c.level}${atCap ? ' (max)' : ''}</div></div>` +
+                    `<div style="flex:1; min-width:0;"><div style="font-size:12px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(name)}</div><div style="font-size:11px; color:#666; margin-top:1px;">Lv ${c.level}${atCap ? ' (max)' : ''}</div></div>` +
                     `<div style="text-align:right; flex-shrink:0;">` +
                         `<div style="font-size:12px; color:#7fd0ff; font-weight:800; margin-bottom:2px;">+${b.amount} XP</div>` +
                         xpBarSplitHtml(b.prevLevel, b.prevXp, c.level, c.xp || 0, xpNeeded) +
@@ -11527,7 +11527,7 @@
                 <div class="bond-overlay" style="position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:9000; display:flex; align-items:center; justify-content:center; padding:20px;">
                     <div style="background:#1a1a2e; border:1px solid #c9a6ff; border-radius:14px; padding:18px; width:100%; max-width:330px; box-shadow:0 8px 30px rgba(0,0,0,0.6); text-align:center;">
                         <div style="font-size:11px; color:#c9a6ff; font-weight:bold; letter-spacing:1px; text-transform:uppercase;">Deepen Bond</div>
-                        <h2 style="margin:6px 0 2px; font-size:17px;">${name}</h2>
+                        <h2 style="margin:6px 0 2px; font-size:17px;">${escapeHtml(name)}</h2>
                         <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin:12px 0;">
                             <span style="font-size:13px; color:#888;">Bond ${lv}</span>
                             <span style="font-size:15px; color:#c9a6ff;">➜</span>
@@ -12229,6 +12229,14 @@
             return creature.nickname || formName(creature.baseId, creature.mergeLevel, evoTierOf(creature));
         }
 
+        // Encode at HTML boundaries only. displayName stays raw for canvas drawing,
+        // comparisons, snapshots, and saved data, so names never get double-encoded.
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, ch => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            })[ch]);
+        }
+
         // Number of creatures needed to advance from the creature's current merge level to the next.
         // Returns null if already at MAX_MERGE (no further merging).
         function mergeReqFor(creature) {
@@ -12350,7 +12358,7 @@
                             <button onclick="this.closest('.ui-overlay').remove(); render();" style="margin-left:auto; padding:5px 12px; font-size:13px;">✕</button>
                         </div>
                         <div style="font-size:11px; color:#888; margin-bottom:12px;">
-                            ${displayName(c)} · Evo tier ${tier}. Tap an ability to equip it. You can carry one A1 and one A2.
+                            ${escapeHtml(displayName(c))} · Evo tier ${tier}. Tap an ability to equip it. You can carry one A1 and one A2.
                         </div>
                         <!-- Column headers -->
                         <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
@@ -12397,7 +12405,7 @@
                     </div>
                     <div style="font-size:11px; letter-spacing:1px; text-transform:uppercase; color:#4ecdc4; font-weight:bold; text-align:center; margin-bottom:4px;">Name your creature</div>
                     <div style="font-size:11px; color:#888; text-align:center; margin-bottom:12px;">Species: ${species}</div>
-                    <input id="renameInput" type="text" maxlength="16" value="${current.replace(/"/g, '&quot;')}" placeholder="${species}"
+                    <input id="renameInput" type="text" maxlength="16" placeholder="${species}"
                         style="width:100%; box-sizing:border-box; padding:11px 12px; font-size:15px; text-align:center;
                                background:#0f1722; border:2px solid #2a4a5a; border-radius:8px; color:#fff; outline:none; margin-bottom:4px;"
                         autocomplete="off" />
@@ -12413,6 +12421,7 @@
             document.body.appendChild(overlay);
 
             const input = overlay.querySelector('#renameInput');
+            input.value = current; // DOM property preserves literal entities, quotes, and emoji.
             const count = overlay.querySelector('#renameCount');
             input.focus();
             input.setSelectionRange(input.value.length, input.value.length);
@@ -13547,7 +13556,7 @@
                 const pos = slot === 0 ? '1st' : slot === 1 ? '2nd' : '3rd';
                 return `<div style="text-align:center; margin-top:5px; line-height:1.35; text-shadow:0 1px 2px #000;">
                     <div style="font-size:13px; color:#cdd4e0; letter-spacing:0.5px;">${pos}${slot === 0 ? ' · Leader' : ''}</div>
-                    <div style="font-size:15px; font-weight:bold; color:#fff;">${elementGlyph(db.element) || ''} ${displayName(c)}</div>
+                    <div style="font-size:15px; font-weight:bold; color:#fff;">${elementGlyph(db.element) || ''} ${escapeHtml(displayName(c))}</div>
                     <div style="font-size:13px; color:#e2e8f0;">Lv ${c.level}</div>
                 </div>`;
             };
@@ -15051,7 +15060,7 @@
                 const rankBadge = `<span style="display:inline-block; min-width:14px; text-align:center; padding:0 3px; border-radius:3px; background:${rankColor(rk)}; color:#111; font-size:8px; font-weight:bold; margin-right:4px;">${rk}</span>`;
                 return `<div style="text-align:center; margin-top:3px; line-height:1.25; text-shadow:0 1px 2px #000;">
                     <div style="font-size:9px; color:#aeb4c0;">${pos}</div>
-                    <div style="font-size:11px; font-weight:bold; color:#fff;">${elementGlyph(base.element) || ''} ${displayName(c)}</div>
+                    <div style="font-size:11px; font-weight:bold; color:#fff;">${elementGlyph(base.element) || ''} ${escapeHtml(displayName(c))}</div>
                     <div style="font-size:9px; color:#cdd6e0;">${rankBadge}Lv ${c.level}</div>
                     <div style="font-size:9px; color:#9fe6b5;">${xpText}</div>
                 </div>`;
@@ -15163,7 +15172,7 @@
                     ${inTeam ? '<div style="position:absolute; top:3px; left:3px; background:#4ecdc4; color:#06202a; font-size:8px; font-weight:bold; padding:1px 4px; border-radius:5px;">IN</div>' : ''}
                     ${ready ? '<div style="position:absolute; top:3px; right:3px; font-size:11px;">✦</div>' : ''}
                     ${spriteImg(c.baseId, 52, '', tier)}
-                    <div style="font-size:10px; color:#fff; font-weight:bold; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:2px;">${displayName(c)}</div>
+                    <div style="font-size:10px; color:#fff; font-weight:bold; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:2px;">${escapeHtml(displayName(c))}</div>
                     <div style="font-size:9px; color:#9fb0c4;">${rankBadge}Lv ${c.level}${stars}</div>
                     ${teamBtn}
                 </div>`;
@@ -15323,7 +15332,7 @@
                             <div style="flex:0 0 auto; display:flex; flex-direction:column; align-items:center; justify-content:center; width:128px;">
                                 ${spriteImg(creature.baseId, 110, '', tier)}
                                 <div style="display:flex; align-items:center; gap:4px; margin-top:6px; justify-content:center;">
-                                    <span style="font-size:15px; font-weight:bold; line-height:1.2; text-align:center;">${name}${stars ? ' <span style="color:#f1c40f; font-size:11px;">' + stars + '</span>' : ''}</span>
+                                    <span style="font-size:15px; font-weight:bold; line-height:1.2; text-align:center;">${escapeHtml(name)}${stars ? ' <span style="color:#f1c40f; font-size:11px;">' + stars + '</span>' : ''}</span>
                                     <button onclick="renameCreature(${creature.id})" title="Rename" style="padding:2px 5px; margin:0; background:#2a3a4a; font-size:11px; line-height:1; border-radius:5px;">✏️</button>
                                 </div>
                                 ${nickname ? `<div style="font-size:10px; color:#777; margin-top:1px; text-align:center;">${speciesName}</div>` : ''}
@@ -15416,7 +15425,7 @@
                             <div style="font-size:11px; color:#9a8fb5; text-transform:uppercase; letter-spacing:1px; margin-bottom:7px;">Skins</div>
                             <div style="display:flex; gap:8px;">
                                 ${['✨ Shiny','💎 Crystal','🌟 Celestial'].map(name => `
-                                <button disabled style="flex:1; padding:10px 4px; margin:0; background:#1e1b2e; border:1px solid #3a3550; border-radius:9px; font-size:11px; color:#5a5470; cursor:default; opacity:0.65;">${name}<br><span style="font-size:9px;">Coming soon</span></button>`).join('')}
+                                <button disabled style="flex:1; padding:10px 4px; margin:0; background:#1e1b2e; border:1px solid #3a3550; border-radius:9px; font-size:11px; color:#5a5470; cursor:default; opacity:0.65;">${escapeHtml(name)}<br><span style="font-size:9px;">Coming soon</span></button>`).join('')}
                             </div>
                         </div>
                     </div>
@@ -15546,7 +15555,7 @@
                     <div class="ui-panel" style="border-color:#e67e22;">
                         <div style="text-align:center; margin-bottom:10px;">
                             <div style="font-size:11px; letter-spacing:2px; text-transform:uppercase; color:#e67e22; font-weight:bold;">Feed to merge</div>
-                            <div style="font-size:18px; font-weight:bold; margin-top:2px;"><span style="display:inline-block; min-width:18px; text-align:center; padding:1px 6px; border-radius:5px; background:${rankColor(rankFromRoll(keeper.statRoll))}; color:#111; font-size:13px; margin-right:6px;">${rankFromRoll(keeper.statRoll)}</span>${displayName(keeper)}</div>
+                            <div style="font-size:18px; font-weight:bold; margin-top:2px;"><span style="display:inline-block; min-width:18px; text-align:center; padding:1px 6px; border-radius:5px; background:${rankColor(rankFromRoll(keeper.statRoll))}; color:#111; font-size:13px; margin-right:6px;">${rankFromRoll(keeper.statRoll)}</span>${escapeHtml(displayName(keeper))}</div>
                             <div style="font-size:10px; color:#888; margin-top:3px;">Keeps its own rank — fed creatures' ranks don't carry over</div>
                         </div>
 
@@ -17003,7 +17012,7 @@
                             (lvlUp ? `<span class="lvlup-sparkle" style="left:-2px; top:-4px;">✨</span><span class="lvlup-sparkle" style="right:-2px; top:2px; animation-delay:0.4s;">✨</span>` : '') +
                         `</div>` +
                         `<div style="flex:1; min-width:0;">` +
-                            `<div style="font-size:12px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${t.name}</div>` +
+                            `<div style="font-size:12px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(t.name)}</div>` +
                             `<div style="font-size:11px; color:#666; margin-top:1px;">Lv ${t.level}${atLevelCap ? ' (max)' : ''}</div>` +
                         `</div>` +
                         `<div style="text-align:right; flex-shrink:0;">` +
@@ -17150,5 +17159,6 @@
     </script>
 </body>
 </html>
+
 
 
