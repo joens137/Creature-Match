@@ -3,17 +3,20 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 const html = fs.readFileSync(require('node:path').join(__dirname, '../index.html'), 'utf8');
-const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+const saveScript = fs.readFileSync(require('node:path').join(__dirname, '../save.js'), 'utf8');
+new vm.Script(saveScript);
+const gameScript = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+const script = gameScript + '\n' + saveScript;
 new vm.Script(script); // Parse the complete game, not just the extracted functions.
 const extract = (start, end) => script.slice(script.indexOf(start), script.indexOf(end, script.indexOf(start)));
 const state = script.slice(script.indexOf('const gameState = {'), script.indexOf('const creatureDatabase = {'));
 const validation = extract('function validateSaveData(', 'function loadGameData(');
 const loader = extract('function loadGameData(', '// Set when storage');
-const parser = extract('function parseSaveCode(', '// Applies a validated save');
+const parser = saveScript.slice(saveScript.indexOf('function parseSaveCode('));
 const importer = extract('function applyImportedSave(', 'function closeSaveCodeOverlay(');
 const context = vm.createContext({ console });
 vm.runInContext(state + `
-const creatureDatabase = { FC1: {} };
+const creatureDatabase = { 1: {}, FC1: {} };
 const ELEMENTS = ['fire', 'water', 'grass', 'electric', 'dark'];
 let storageUnavailable = false, saveLoadFailed = false;
 const storage = new Map();
@@ -34,6 +37,7 @@ const check = (data, expected) => {
   count++;
 };
 check(valid, true);
+check({ creatures: [{ ...valid.creatures[0], baseId: 1 }], team: [1.25] }, true);
 check({ creatures: [], team: [] }, true);
 for (const patch of [
   { creatures: {} }, { creatures: [null] }, { creatures: [{}] },
