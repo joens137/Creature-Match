@@ -2885,6 +2885,122 @@
         // corruption, manual tampering) are all realistic causes. So: parse defensively, and if
         // the save is unreadable, preserve it under a backup key (never silently destroy what
         // might be recoverable progress) and boot fresh instead of dying.
+        // Shared boundary for disk saves and pasted backups. Work on a detached copy:
+        // rejection must not mutate either the live game or the player's saved progress.
+        function validateSaveData(input) {
+            const object = v => v !== null && typeof v === 'object' && !Array.isArray(v);
+            const fail = path => { throw new Error('Invalid save field: ' + path); };
+            const number = (v, path, min = 0, integer = false) => {
+                if (typeof v !== 'number' || !Number.isFinite(v) || v < min ||
+                    (integer && !Number.isSafeInteger(v))) fail(path);
+            };
+            try {
+                if (!object(input)) fail('save');
+                // Reject prototype setters even in nested extension data before Object.assign.
+                const inspect = (v, path, depth = 0) => {
+                    if (depth > 100) fail(path);
+                    if (!v || typeof v !== 'object') return;
+                    for (const key of Object.keys(v)) {
+                        if (['__proto__', 'constructor', 'prototype'].includes(key)) fail(path + '.' + key);
+                        inspect(v[key], path + '.' + key, depth + 1);
+                    }
+                };
+                inspect(input, 'save');
+                const data = JSON.parse(JSON.stringify(input));
+                if (data.pokedex && !data.creaturedex) data.creaturedex = data.pokedex;
+                if (data.coins != null && data.spirit == null) data.spirit = data.coins;
+                delete data.pokedex;
+                delete data.coins;
+                if (!Array.isArray(data.creatures) || !Array.isArray(data.team)) fail('creatures/team');
+
+                // Validate supplied default-backed fields and fill absent nested fields in
+                // older saves. Null defaults have their own checks below where needed.
+                const backfill = (value, defaults, path) => {
+                    for (const [key, fallback] of Object.entries(defaults)) {
+                        const field = path + '.' + key;
+                        if (!Object.hasOwn(value, key)) {
+                            value[key] = JSON.parse(JSON.stringify(fallback));
+                        } else if (fallback !== null) {
+                            const v = value[key];
+                            if (Array.isArray(fallback)) {
+                                if (!Array.isArray(v)) fail(field);
+                            } else if (object(fallback)) {
+                                if (!object(v)) fail(field);
+                                backfill(v, fallback, field);
+                            } else if (typeof v !== typeof fallback) fail(field);
+                            else if (typeof v === 'number') number(v, field);
+                        }
+                    }
+                };
+                backfill(data, GAME_STATE_DEFAULTS, 'save');
+                for (const key of ['currentLevel', 'currentFloor']) number(data[key], key, 1, true);
+                for (const key of ['spirit', 'gems', 'energy', 'loginStreak']) number(data[key], key, 0, true);
+                for (const key of ['skillLevels', 'dexEvoSeen']) {
+                    for (const value of Object.values(data[key])) number(value, key, 0, true);
+                }
+                for (const key of ['narrativeShown', 'shopTabsSeen']) {
+                    if (!object(data.tutorial[key])) fail('tutorial.' + key);
+                }
+                if (!data.achievements.every(v => typeof v === 'string')) fail('achievements');
+                const ids = new Set();
+                data.creatures.forEach((c, i) => {
+                    const path = 'creatures[' + i + ']';
+                    if (!object(c)) fail(path);
+                    number(c.id, path + '.id'); // instance IDs intentionally have fractional parts
+                    if (ids.has(c.id)) fail(path + '.id (duplicate)');
+                    ids.add(c.id);
+                    if (typeof c.baseId !== 'string' || !Object.hasOwn(creatureDatabase, c.baseId)) fail(path + '.baseId');
+                    number(c.level, path + '.level', 1, true);
+                    for (const key of ['xp', 'mergeLevel', 'mergeProgress', 'evoTier', 'bondLevel']) {
+                        if (!Object.hasOwn(c, key)) c[key] = 0;
+                        number(c[key], path + '.' + key, 0, true);
+                    }
+                    if (c.evoTier > 2 || c.bondLevel > 5) fail(path + '.evolution/bond');
+                    if (c.statRoll != null) {
+                        if (!object(c.statRoll)) fail(path + '.statRoll');
+                        for (const key of ['hp', 'atk', 'def']) number(c.statRoll[key], path + '.statRoll.' + key, -5);
+                    }
+                    if (c.nickname != null && typeof c.nickname !== 'string') fail(path + '.nickname');
+                    for (const key of ['equippedA1', 'equippedA2']) {
+                        if (c[key] != null && !['evo0', 'evo1', 'evo2'].includes(c[key])) fail(path + '.' + key);
+                    }
+                });
+                const team = (slots, path) => {
+                    if (!Array.isArray(slots) || slots.length > 3) fail(path);
+                    const seen = new Set();
+                    slots.forEach(id => {
+                        if (id === null) return;
+                        if (!ids.has(id) || seen.has(id)) fail(path + ' (unknown or duplicate creature)');
+                        seen.add(id);
+                    });
+                    while (slots.length < 3) slots.push(null);
+                };
+                team(data.team, 'team');
+                if (data.formations != null) {
+                    if (!Array.isArray(data.formations)) fail('formations');
+                    data.formations.forEach((slots, i) => {
+                        if (!Array.isArray(slots)) fail('formations[' + i + ']');
+                        const seen = new Set();
+                        data.formations[i] = slots.slice(0, 3).map(id => {
+                            if (!ids.has(id) || seen.has(id)) return null;
+                            seen.add(id);
+                            return id;
+                        });
+                        while (data.formations[i].length < 3) data.formations[i].push(null);
+                    });
+                }
+                if (data.activeFormation != null) number(data.activeFormation, 'activeFormation', 0, true);
+                if (data.selectedStarterElement !== null && !ELEMENTS.includes(data.selectedStarterElement)) fail('selectedStarterElement');
+                for (const key of ['dailyLastClaimDate']) {
+                    if (data[key] !== null && typeof data[key] !== 'string') fail(key);
+                }
+                if (data.selectedCreatureId !== null && !ids.has(data.selectedCreatureId)) data.selectedCreatureId = null;
+                return { ok: true, data };
+            } catch (e) {
+                return { ok: false, reason: e.message || 'The save is damaged.' };
+            }
+        }
+
         function loadGameData() {
             let saved = null;
             try {
@@ -2899,7 +3015,9 @@
             let data;
             try {
                 data = JSON.parse(saved);
-                if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('save is not an object');
+                const validated = validateSaveData(data);
+                if (!validated.ok) throw new Error(validated.reason);
+                data = validated.data;
             } catch (e) {
                 try {
                     localStorage.setItem('creatureMatchGame_corrupt_backup', saved);
@@ -14717,11 +14835,7 @@
             if (!data || typeof data !== 'object' || Array.isArray(data)) {
                 return { ok: false, reason: 'That code does not contain a save.' };
             }
-            // Shape check: confirm it's actually a save from THIS game, not arbitrary JSON.
-            if (!Array.isArray(data.creatures) || !Array.isArray(data.team)) {
-                return { ok: false, reason: 'That code is missing creature data — it may be from another game.' };
-            }
-            return { ok: true, data };
+            return validateSaveData(data);
         }
 
         // Applies a validated save. Mirrors resetAllProgress's proven in-place approach
@@ -14729,6 +14843,10 @@
         // Stashes the CURRENT save to a rollback key first, so importing the wrong code isn't
         // itself an unrecoverable action.
         function applyImportedSave(data) {
+            // Recheck at the mutation boundary too, even if a caller bypasses the dialog.
+            const validated = validateSaveData(data);
+            if (!validated.ok) { homeToast(validated.reason); return false; }
+            data = validated.data;
             try {
                 const current = localStorage.getItem('creatureMatchGame');
                 if (current) localStorage.setItem('creatureMatchGame_preimport_backup', current);
@@ -18993,3 +19111,4 @@
     </script>
 </body>
 </html>
+
