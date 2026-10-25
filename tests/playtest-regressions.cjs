@@ -10,7 +10,7 @@ const functionSource = name => {
     return main.slice(start, next < 0 ? main.length : start + 1 + next);
 };
 const context = vm.createContext({ console });
-for (const script of scripts.filter(s => s.path !== null)) vm.runInContext(script.source, context);
+for (const script of scripts.filter(s => s.path !== null && s.path !== 'progression.js')) vm.runInContext(script.source, context);
 vm.runInContext(state + `
 const storage = new Map();
 const localStorage = { getItem: key => storage.get(key) || null, setItem: (key, value) => storage.set(key, value), removeItem: key => storage.delete(key) };
@@ -109,3 +109,4 @@ assert.ok(!run('capturedHtml.includes("<b>Bob</b>")'));
 assert.equal(run('escapeHtml("&<>\\\"\\\'")'), '&amp;&lt;&gt;&quot;&#39;');
 assert.doesNotMatch(main, /\$\{displayName\(/, 'A direct nickname interpolation remains unescaped');
 console.log('Tutorial reload (phases 1–3), legacy/completed routing, rename round trips, plain-text profile rendering, and HTML-boundary checks passed.');
+

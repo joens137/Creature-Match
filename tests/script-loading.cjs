@@ -5,7 +5,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const { root, html, scripts, main, state } = require('./game-sources.cjs');
 assert.deepEqual(scripts.map(s => s.path), [
-    'data/balance.js', 'data/creatures.js', 'data/abilities.js', 'data/world.js', 'save.js', null
+    'data/balance.js', 'data/creatures.js', 'data/abilities.js', 'data/world.js', 'save.js', 'progression.js', null
 ]);
 for (const script of scripts) {
     assert.doesNotMatch(script.attributes, /async|defer/);
@@ -47,3 +47,4 @@ for (const element of data.ELEMENTS) {
     for (const target of data.elementAdvantages[element]) assert.ok(data.ELEMENTS.includes(target));
 }
 console.log('Script order, stylesheet, combined syntax, isolated data loading, species/ability/encounter coverage, XP table, and real-save compatibility passed.');
+
